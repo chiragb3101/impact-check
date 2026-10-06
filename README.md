@@ -264,6 +264,27 @@ copilot --agent=impact-check --prompt "check feature/refund-limits" \
   --allow-tool='shell(impact:*)' --allow-tool='shell(git:*)' --deny-tool='shell(git push)'
 ```
 
+### Using the VS Code chat sidebar instead of the CLI
+
+The same agent works in Copilot Chat in VS Code:
+
+1. Make sure the agent file is at `.github/agents/impact-check.agent.md` in the open workspace,
+   then reload VS Code (Command Palette → *Developer: Reload Window*).
+2. Open Copilot Chat and pick **Agent** mode. *Ask* and *Edit* modes can't run commands. Then pick
+   **impact-check** in the agent dropdown at the bottom of the chat box.
+3. Click the **tools** icon in the chat box and make sure the **terminal / run commands** tool is
+   ticked.
+4. Check that VS Code's terminal can find the CLI: open a terminal (`` Ctrl+` ``) and run
+   `impact --version`. If it can't, run `pipx ensurepath` and **quit and reopen VS Code**, not just
+   the terminal.
+5. Prompt `check feature/refund-limits`. VS Code asks before each terminal command; click
+   **Allow**. You can allow `impact` commands for the session.
+
+If chat says *"impact command tool is not available in this session"*, the agent has no terminal
+tool. Go through steps 2–3, and make sure your copy of the agent file has **no `tools:` line**.
+Older copies had `tools: ['read', 'search', 'execute', 'edit']`, which VS Code may not recognise.
+Without a `tools:` line the agent gets every tool.
+
 ### Step 4 · Read the report
 
 Open `impact-reports/<branch>-<time>.html` in a browser. It contains:
@@ -342,6 +363,7 @@ report was right and useful. See `NEXT_STEPS.md` for the full plan.
 |---|---|---|
 | `copilot: command not found` | Not installed, or npm's global bin isn't on PATH | Re-run step 1; check `npm prefix -g` |
 | Copilot says CLI access is disabled | Policy is off | Ask your admin (step 0.1) |
+| VS Code chat: "impact command tool is not available" | Agent has no terminal tool (not in Agent mode, terminal tool unticked, or an old agent file with a `tools:` line) | See "Using the VS Code chat sidebar"; update the agent file |
 | `/agent` doesn't list `impact-check` | Agent file not found | It must be in `.github/agents/`, `~/.copilot/agents/` or the org's `.github-private/agents/`; restart `copilot` |
 | Agent says `impact: command not found` | The pipx bin folder isn't on PATH | Run `pipx ensurepath` and open a new terminal |
 | `No index found` | First run in this repo | `impact index` (the agent normally does this) |
