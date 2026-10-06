@@ -7,6 +7,7 @@ from .graph import Graph
 from .index import require_index
 from .parsing import innermost_symbol, language_for, parse_source
 from .risk import overall, score_symbol
+from .rules import summary as rules_summary
 from .sqlschema import db_usage, parse_schema_changes
 
 
@@ -153,4 +154,5 @@ def build_facts(cfg: Config, branch: str, base: str, depth: int = 2, test_depth:
             "drill_down": "impact callers <symbol> --depth 3 --branch " + branch,
         },
         "notes": notes,
+        "rules": rules_summary(root),
     }

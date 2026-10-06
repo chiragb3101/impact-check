@@ -98,6 +98,23 @@ def cmd_db_usage(cfg, args):
     _out(db_usage(cfg.root, files, table, column or None, limit=args.limit))
 
 
+def cmd_rules(cfg, args):
+    from . import rules
+    if args.action == "add":
+        if not args.text:
+            _out({"error": 'Pass the rule text, for example: impact rules add "Treat billing/ as high risk"'}, 2)
+        result = rules.add(cfg.root, " ".join(args.text), args.scope)
+    elif args.action == "remove":
+        if not args.text:
+            _out({"error": "Pass the rule id to remove. Run `impact rules` to see ids."}, 2)
+        result = rules.remove(cfg.root, args.text[0])
+    elif args.action == "path":
+        result = {"file": str(rules.path_for(args.scope, cfg.root)), "scope": args.scope}
+    else:
+        result = rules.summary(cfg.root)
+    _out(result, 2 if "error" in result else 0)
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="impact", description="Change impact analysis for monorepos. Output is JSON.")
     p.add_argument("--root", help="Repo root (default: git top-level of current directory)")
@@ -151,6 +168,13 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("target", help="table or table.column")
     s.add_argument("--limit", type=int, default=50)
     s.set_defaults(func=cmd_db_usage)
+
+    s = sub.add_parser("rules", help="Natural-language rules the agent follows when preparing reports")
+    s.add_argument("action", nargs="?", choices=["list", "add", "remove", "path"], default="list")
+    s.add_argument("text", nargs="*", help="Rule text for `add`, rule id for `remove`")
+    s.add_argument("--scope", choices=["user", "local", "team"], default="user",
+                   help="user: personal, all repos (default). local: personal, this repo. team: shared, committed.")
+    s.set_defaults(func=cmd_rules)
     return p
 
 

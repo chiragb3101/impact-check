@@ -3,33 +3,89 @@
   "title": "Impact findings",
   "description": "Written by the Copilot agent after investigating a branch. Rendered by `impact report`.",
   "type": "object",
-  "required": ["branch", "base", "summary", "risk", "changes", "callers", "tests"],
+  "required": [
+    "branch",
+    "base",
+    "summary",
+    "risk",
+    "changes",
+    "callers",
+    "tests"
+  ],
   "additionalProperties": false,
   "properties": {
-    "branch": {"type": "string"},
-    "base": {"type": "string"},
-    "summary": {"type": "string", "minLength": 10, "description": "Two or three plain sentences: is this safe to merge and why."},
+    "branch": {
+      "type": "string"
+    },
+    "base": {
+      "type": "string"
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 10,
+      "description": "Two or three plain sentences: is this safe to merge and why."
+    },
     "risk": {
       "type": "object",
-      "required": ["level", "reasons"],
+      "required": [
+        "level",
+        "reasons"
+      ],
       "additionalProperties": false,
       "properties": {
-        "level": {"enum": ["high", "medium", "low"]},
-        "score": {"type": "integer", "minimum": 0, "maximum": 100},
-        "reasons": {"type": "array", "items": {"type": "string"}, "minItems": 1}
+        "level": {
+          "enum": [
+            "high",
+            "medium",
+            "low"
+          ]
+        },
+        "score": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "reasons": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1
+        }
       }
     },
     "changes": {
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["symbol", "file", "kind", "description"],
+        "required": [
+          "symbol",
+          "file",
+          "kind",
+          "description"
+        ],
         "additionalProperties": false,
         "properties": {
-          "symbol": {"type": "string"},
-          "file": {"type": "string"},
-          "kind": {"enum": ["behavior_change", "refactor", "signature_change", "new", "deleted", "schema_change", "config_change"]},
-          "description": {"type": "string"}
+          "symbol": {
+            "type": "string"
+          },
+          "file": {
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "behavior_change",
+              "refactor",
+              "signature_change",
+              "new",
+              "deleted",
+              "schema_change",
+              "config_change"
+            ]
+          },
+          "description": {
+            "type": "string"
+          }
         }
       }
     },
@@ -37,36 +93,86 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["caller", "file", "verdict", "reason"],
+        "required": [
+          "caller",
+          "file",
+          "verdict",
+          "reason"
+        ],
         "additionalProperties": false,
         "properties": {
-          "caller": {"type": "string"},
-          "file": {"type": "string"},
-          "line": {"type": "integer"},
-          "for_symbol": {"type": "string"},
-          "verdict": {"enum": ["breaks", "safe", "unclear"]},
-          "reason": {"type": "string"}
+          "caller": {
+            "type": "string"
+          },
+          "file": {
+            "type": "string"
+          },
+          "line": {
+            "type": "integer"
+          },
+          "for_symbol": {
+            "type": "string"
+          },
+          "verdict": {
+            "enum": [
+              "breaks",
+              "safe",
+              "unclear"
+            ]
+          },
+          "reason": {
+            "type": "string"
+          }
         }
       }
     },
     "tests": {
       "type": "object",
-      "required": ["selected", "results"],
+      "required": [
+        "selected",
+        "results"
+      ],
       "additionalProperties": false,
       "properties": {
-        "selected": {"type": "integer", "minimum": 0},
-        "total_in_index": {"type": "integer", "minimum": 0},
-        "seconds": {"type": "number", "minimum": 0},
+        "selected": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "total_in_index": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "seconds": {
+          "type": "number",
+          "minimum": 0
+        },
         "results": {
           "type": "array",
           "items": {
             "type": "object",
-            "required": ["test", "status"],
+            "required": [
+              "test",
+              "status"
+            ],
             "additionalProperties": false,
             "properties": {
-              "test": {"type": "string"},
-              "status": {"enum": ["passed", "failed", "error", "skipped"]},
-              "message": {"type": ["string", "null"]}
+              "test": {
+                "type": "string"
+              },
+              "status": {
+                "enum": [
+                  "passed",
+                  "failed",
+                  "error",
+                  "skipped"
+                ]
+              },
+              "message": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
             }
           }
         }
@@ -76,19 +182,39 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["description"],
+        "required": [
+          "description"
+        ],
         "additionalProperties": false,
         "properties": {
-          "description": {"type": "string"},
+          "description": {
+            "type": "string"
+          },
           "generated_test": {
             "type": "object",
-            "required": ["path", "status"],
+            "required": [
+              "path",
+              "status"
+            ],
             "additionalProperties": false,
             "properties": {
-              "path": {"type": "string"},
-              "status": {"enum": ["passed", "failed", "error", "not_run"]},
-              "confirms_risk": {"type": "boolean"},
-              "note": {"type": "string"}
+              "path": {
+                "type": "string"
+              },
+              "status": {
+                "enum": [
+                  "passed",
+                  "failed",
+                  "error",
+                  "not_run"
+                ]
+              },
+              "confirms_risk": {
+                "type": "boolean"
+              },
+              "note": {
+                "type": "string"
+              }
             }
           }
         }
@@ -98,25 +224,84 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["description", "severity"],
+        "required": [
+          "description",
+          "severity"
+        ],
         "additionalProperties": false,
         "properties": {
-          "description": {"type": "string"},
-          "severity": {"enum": ["high", "medium", "low"]},
-          "affected_code": {"type": "array", "items": {"type": "string"}}
+          "description": {
+            "type": "string"
+          },
+          "severity": {
+            "enum": [
+              "high",
+              "medium",
+              "low"
+            ]
+          },
+          "affected_code": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
         }
       }
     },
-    "suggested_fixes": {"type": "array", "items": {"type": "string"}},
+    "suggested_fixes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
     "agent_trace": {
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["action", "detail"],
+        "required": [
+          "action",
+          "detail"
+        ],
         "additionalProperties": false,
         "properties": {
-          "action": {"type": "string"},
-          "detail": {"type": "string"}
+          "action": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "rules_applied": {
+      "type": "array",
+      "description": "Rules from `impact rules` that changed this report.",
+      "items": {
+        "type": "object",
+        "required": [
+          "rule",
+          "effect"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "scope": {
+            "enum": [
+              "user",
+              "local",
+              "team"
+            ]
+          },
+          "rule": {
+            "type": "string"
+          },
+          "effect": {
+            "type": "string",
+            "description": "What the rule changed in this report."
+          }
         }
       }
     }

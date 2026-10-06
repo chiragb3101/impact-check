@@ -166,6 +166,18 @@ footer { margin-top: 48px; color: var(--muted); font-size: 0.85rem; }
 <ol class="fixes">{% for s in f.suggested_fixes %}<li>{{ s }}</li>{% endfor %}</ol>
 {% endif %}
 
+{% if f.rules_applied %}
+<h2>Rules applied</h2>
+<div class="table-wrap"><table>
+  <thead><tr><th>Rule</th><th>Effect on this report</th></tr></thead>
+  <tbody>
+  {% for r in f.rules_applied %}
+    <tr><td>{{ r.rule }}{% if r.scope %}<div style="color:var(--muted);font-size:0.85rem">{{ r.scope }}{% if r.id %} · {{ r.id }}{% endif %}</div>{% endif %}</td><td>{{ r.effect }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+{% endif %}
+
 {% if f.agent_trace %}
 <details>
   <summary>How the agent reached this ({{ f.agent_trace | length }} steps)</summary>

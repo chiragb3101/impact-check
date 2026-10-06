@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Impact: pr-2676  (spring-projects/spring-petclinic#2676)</title>
+<style>
+:root {
+  --paper: #ffffff; --ink: #1b2230; --muted: #5b6474; --rule: #e3e6eb; --wash: #f5f7fa;
+  --high: #b42318; --medium: #a15c07; --low: #1f7a4d; --link: #2e5aac;
+  --verdict: var(--high);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #12161d; --ink: #e6e9ee; --muted: #9aa3b2; --rule: #2a313c; --wash: #1a2029;
+    --high: #f97066; --medium: #fdb022; --low: #47cd89; --link: #84adff;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--paper); color: var(--ink);
+  font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+main { max-width: 980px; margin: 0 auto; padding: 48px 24px 80px; }
+code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.86em; }
+h2 { font-size: 1.15rem; margin: 48px 0 12px; }
+p { margin: 0 0 12px; max-width: 72ch; }
+
+.verdict { border-left: 6px solid var(--verdict); padding: 4px 0 4px 24px; }
+.verdict h1 { font-size: clamp(2.6rem, 7vw, 4.2rem); line-height: 1; letter-spacing: -0.02em;
+  margin: 0 0 12px; color: var(--verdict); font-weight: 800; }
+.verdict .branch { color: var(--muted); margin-bottom: 16px; }
+.verdict .summary { font-size: 1.12rem; max-width: 64ch; }
+.reasons { margin: 12px 0 0; padding-left: 18px; color: var(--muted); }
+
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 1px;
+  background: var(--rule); border: 1px solid var(--rule); border-radius: 10px; overflow: hidden; margin-top: 32px; }
+.stat { background: var(--paper); padding: 16px 18px; }
+.stat strong { display: block; font-size: 1.6rem; line-height: 1.2; }
+.stat span { color: var(--muted); font-size: 0.9rem; }
+.stat.bad strong { color: var(--high); }
+
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+th { text-align: left; font-weight: 600; color: var(--muted); padding: 8px 12px 8px 0; border-bottom: 1px solid var(--rule); }
+td { padding: 10px 12px 10px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+tr:last-child td { border-bottom: 0; }
+
+.tag { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 0.8rem; font-weight: 600;
+  border: 1px solid currentColor; white-space: nowrap; }
+.t-breaks, .t-failed, .t-error, .t-high { color: var(--high); }
+.t-unclear, .t-medium, .t-skipped, .t-not_run { color: var(--medium); }
+.t-safe, .t-passed, .t-low { color: var(--low); }
+.t-neutral { color: var(--muted); }
+
+.change { padding: 14px 0; border-bottom: 1px solid var(--rule); }
+.change:last-child { border-bottom: 0; }
+.change .head { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; margin-bottom: 4px; }
+.change .file { color: var(--muted); }
+.message { white-space: pre-wrap; color: var(--muted); margin-top: 6px; max-height: 180px; overflow: auto; }
+
+.box { background: var(--wash); border-radius: 10px; padding: 16px 20px; margin-bottom: 12px; }
+ol.fixes li { margin-bottom: 8px; }
+
+details { border-top: 1px solid var(--rule); margin-top: 48px; padding-top: 16px; }
+summary { cursor: pointer; font-weight: 600; }
+summary:focus-visible, a:focus-visible { outline: 2px solid var(--link); outline-offset: 3px; }
+ol.trace { padding-left: 22px; }
+ol.trace li { margin: 8px 0; }
+ol.trace .action { font-weight: 600; }
+footer { margin-top: 48px; color: var(--muted); font-size: 0.85rem; }
+.empty { color: var(--muted); font-style: italic; }
+</style>
+</head>
+<body>
+<main>
+
+<section class="verdict" aria-label="Verdict">
+  <h1>High risk <span style="font-weight:400;font-size:0.4em;color:var(--muted)">80/100</span></h1>
+  <div class="branch"><code>pr-2676  (spring-projects/spring-petclinic#2676)</code> into <code>main</code></div>
+  <p class="summary">Not safe to merge. The PR renames OwnerRepository.findByLastNameStartingWith to ...IgnoreCase but 12 call sites in two test classes still use the old name, so the test module no longer compiles and CI will fail. The production change itself is correct; update the tests to the new method name.</p>
+  <ul class="reasons"><li>Deleted repository method is still referenced by OwnerControllerTests and ClinicServiceTests (12 call sites).</li><li>All 7 selected tests fail to compile on the branch.</li><li>Rule u-9c9e: deleted public method still referenced anywhere is high risk (tool score was 37).</li></ul>
+</section>
+
+
+
+
+<div class="stats">
+  <div class="stat"><strong>7 of 81</strong><span>tests selected</span></div>
+  <div class="stat"><strong>48.0s</strong><span>test run time</span></div>
+  <div class="stat bad"><strong>7</strong><span>failing tests</span></div>
+  <div class="stat bad"><strong>2</strong><span>callers that break</span></div>
+</div>
+
+<h2>What changed</h2>
+
+<div>
+
+  <div class="change">
+    <div class="head">
+      <code>OwnerRepository.findByLastNameStartingWith</code>
+      <span class="tag t-high">deleted</span>
+      <span class="file mono">src/main/java/org/springframework/samples/petclinic/owner/OwnerRepository.java</span>
+    </div>
+    <div>Replaced by findByLastNameStartingWithIgnoreCase; old Spring Data derived query removed.</div>
+  </div>
+
+  <div class="change">
+    <div class="head">
+      <code>OwnerRepository.findByLastNameStartingWithIgnoreCase</code>
+      <span class="tag t-neutral">new</span>
+      <span class="file mono">src/main/java/org/springframework/samples/petclinic/owner/OwnerRepository.java</span>
+    </div>
+    <div>Case-insensitive prefix search via Spring Data method-name derivation (generates UPPER(last_name) LIKE UPPER(?)).</div>
+  </div>
+
+  <div class="change">
+    <div class="head">
+      <code>OwnerController.findPaginatedForOwnersLastName</code>
+      <span class="tag t-high">behavior change</span>
+      <span class="file mono">src/main/java/org/springframework/samples/petclinic/owner/OwnerController.java</span>
+    </div>
+    <div>Owner search is now case-insensitive: &#39;davis&#39; matches &#39;Davis&#39;.</div>
+  </div>
+
+</div>
+
+
+<h2>Who is affected</h2>
+
+<div class="table-wrap"><table>
+  <thead><tr><th>Caller</th><th>Verdict</th><th>Why</th></tr></thead>
+  <tbody>
+  
+    <tr>
+      <td><code>OwnerControllerTests.setup</code><div class="mono" style="color:var(--muted)">src/test/java/org/springframework/samples/petclinic/owner/OwnerControllerTests.java:96</div><div style="color:var(--muted);font-size:0.85rem">calls findByLastNameStartingWith</div></td>
+      <td><span class="tag t-breaks">breaks</span></td>
+      <td>Mocks the removed method; compile error. Same for 7 more mocks/verifies in this class.</td>
+    </tr>
+  
+    <tr>
+      <td><code>ClinicServiceTests.shouldFindOwnersByLastName</code><div class="mono" style="color:var(--muted)">src/test/java/org/springframework/samples/petclinic/service/ClinicServiceTests.java:91</div><div style="color:var(--muted);font-size:0.85rem">calls findByLastNameStartingWith</div></td>
+      <td><span class="tag t-breaks">breaks</span></td>
+      <td>Calls the removed method directly; compile error (also lines 94, 112, 124).</td>
+    </tr>
+  
+    <tr>
+      <td><code>OwnerController.processFindForm</code><div class="mono" style="color:var(--muted)">src/main/java/org/springframework/samples/petclinic/owner/OwnerController.java:107</div><div style="color:var(--muted);font-size:0.85rem">calls findPaginatedForOwnersLastName</div></td>
+      <td><span class="tag t-safe">safe</span></td>
+      <td>Signature unchanged; it only receives more matches now.</td>
+    </tr>
+  
+  </tbody>
+</table></div>
+
+
+
+
+<h2>Tests</h2>
+
+<div class="table-wrap"><table>
+  <thead><tr><th>Test</th><th>Result</th></tr></thead>
+  <tbody>
+  
+    <tr>
+      <td><code>ClinicServiceTests#shouldFindOwnersByLastName</code><div class="message mono">Test compilation failed: cannot find symbol findByLastNameStartingWith(String, Pageable) in OwnerControllerTests.java:96,147,154,163,171,177,183,189 and ClinicServiceTests.java:91,94,112,124.</div></td>
+      <td><span class="tag t-error">error</span></td>
+    </tr>
+  
+    <tr>
+      <td><code>ClinicServiceTests#shouldInsertOwner</code><div class="message mono">Not run: test sources do not compile.</div></td>
+      <td><span class="tag t-error">error</span></td>
+    </tr>
+  
+    <tr>
+      <td><code>OwnerControllerTests#processFindFormByLastName</code><div class="message mono">Not run: test sources do not compile.</div></td>
+      <td><span class="tag t-error">error</span></td>
+    </tr>
+  
+    <tr>
+      <td><code>OwnerControllerTests#processFindFormIgnoresSurroundingWhitespace</code><div class="message mono">Not run: test sources do not compile.</div></td>
+      <td><span class="tag t-error">error</span></td>
+    </tr>
+  
+    <tr>
+      <td><code>OwnerControllerTests#processFindFormNoOwnersFound</code><div class="message mono">Not run: test sources do not compile.</div></td>
+      <td><span class="tag t-error">error</span></td>
+    </tr>
+  
+    <tr>
+      <td><code>OwnerControllerTests#processFindFormSuccess</code><div class="message mono">Not run: test sources do not compile.</div></td>
+      <td><span class="tag t-error">error</span></td>
+    </tr>
+  
+    <tr>
+      <td><code>OwnerControllerTests#processFindFormWithWhitespaceOnlyLastNameReturnsAllOwners</code><div class="message mono">Not run: test sources do not compile.</div></td>
+      <td><span class="tag t-error">error</span></td>
+    </tr>
+  
+  </tbody>
+</table></div>
+
+
+
+<h2>Missing coverage</h2>
+
+<div class="box">
+  <p>No test checks the new case-insensitive behaviour (e.g. searching &#39;davis&#39; returns Davis). Add one to ClinicServiceTests once the rename is fixed.</p>
+  
+</div>
+
+
+
+
+<h2>Suggested fixes</h2>
+<ol class="fixes"><li>Rename findByLastNameStartingWith to findByLastNameStartingWithIgnoreCase in OwnerControllerTests (8 places) and ClinicServiceTests (4 places).</li><li>Add a ClinicServiceTests case for lower-case search input.</li><li>Run ./mvnw test before pushing; the PR&#39;s CI would have caught this.</li></ol>
+
+
+
+<h2>Rules applied</h2>
+<div class="table-wrap"><table>
+  <thead><tr><th>Rule</th><th>Effect on this report</th></tr></thead>
+  <tbody>
+  
+    <tr><td>Any deleted or renamed public method that is still referenced anywhere, including tests, is high risk.<div style="color:var(--muted);font-size:0.85rem">user · u-9c9e</div></td><td>Raised risk from medium (tool score 37) to high.</td></tr>
+  
+  </tbody>
+</table></div>
+
+
+
+<details>
+  <summary>How the agent reached this (4 steps)</summary>
+  <ol class="trace">
+  <li><span class="action">impact facts</span>: 3 changed symbols; deleted method has 1 direct caller in OwnerControllerTests.setup and 7 reachable tests.</li><li><span class="action">git grep</span>: Found 12 remaining references to the old method name in two test classes.</li><li><span class="action">impact run-tests --sandbox</span>: mvn test-compile failed with &#39;cannot find symbol&#39; (48s).</li><li><span class="action">rules</span>: Applied u-9c9e. t-e7ec and l-5617 did not apply.</li>
+  </ol>
+</details>
+
+
+<footer>Generated by impact 0.1.0 on 2026-10-06 22:54. Caller analysis is name-based and verified by the agent where marked.</footer>
+</main>
+</body>
+</html>

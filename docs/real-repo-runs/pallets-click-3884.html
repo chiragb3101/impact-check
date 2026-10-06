@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Impact: pr-3884  (pallets/click#3884)</title>
+<style>
+:root {
+  --paper: #ffffff; --ink: #1b2230; --muted: #5b6474; --rule: #e3e6eb; --wash: #f5f7fa;
+  --high: #b42318; --medium: #a15c07; --low: #1f7a4d; --link: #2e5aac;
+  --verdict: var(--low);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #12161d; --ink: #e6e9ee; --muted: #9aa3b2; --rule: #2a313c; --wash: #1a2029;
+    --high: #f97066; --medium: #fdb022; --low: #47cd89; --link: #84adff;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--paper); color: var(--ink);
+  font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+main { max-width: 980px; margin: 0 auto; padding: 48px 24px 80px; }
+code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.86em; }
+h2 { font-size: 1.15rem; margin: 48px 0 12px; }
+p { margin: 0 0 12px; max-width: 72ch; }
+
+.verdict { border-left: 6px solid var(--verdict); padding: 4px 0 4px 24px; }
+.verdict h1 { font-size: clamp(2.6rem, 7vw, 4.2rem); line-height: 1; letter-spacing: -0.02em;
+  margin: 0 0 12px; color: var(--verdict); font-weight: 800; }
+.verdict .branch { color: var(--muted); margin-bottom: 16px; }
+.verdict .summary { font-size: 1.12rem; max-width: 64ch; }
+.reasons { margin: 12px 0 0; padding-left: 18px; color: var(--muted); }
+
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 1px;
+  background: var(--rule); border: 1px solid var(--rule); border-radius: 10px; overflow: hidden; margin-top: 32px; }
+.stat { background: var(--paper); padding: 16px 18px; }
+.stat strong { display: block; font-size: 1.6rem; line-height: 1.2; }
+.stat span { color: var(--muted); font-size: 0.9rem; }
+.stat.bad strong { color: var(--high); }
+
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+th { text-align: left; font-weight: 600; color: var(--muted); padding: 8px 12px 8px 0; border-bottom: 1px solid var(--rule); }
+td { padding: 10px 12px 10px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+tr:last-child td { border-bottom: 0; }
+
+.tag { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 0.8rem; font-weight: 600;
+  border: 1px solid currentColor; white-space: nowrap; }
+.t-breaks, .t-failed, .t-error, .t-high { color: var(--high); }
+.t-unclear, .t-medium, .t-skipped, .t-not_run { color: var(--medium); }
+.t-safe, .t-passed, .t-low { color: var(--low); }
+.t-neutral { color: var(--muted); }
+
+.change { padding: 14px 0; border-bottom: 1px solid var(--rule); }
+.change:last-child { border-bottom: 0; }
+.change .head { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; margin-bottom: 4px; }
+.change .file { color: var(--muted); }
+.message { white-space: pre-wrap; color: var(--muted); margin-top: 6px; max-height: 180px; overflow: auto; }
+
+.box { background: var(--wash); border-radius: 10px; padding: 16px 20px; margin-bottom: 12px; }
+ol.fixes li { margin-bottom: 8px; }
+
+details { border-top: 1px solid var(--rule); margin-top: 48px; padding-top: 16px; }
+summary { cursor: pointer; font-weight: 600; }
+summary:focus-visible, a:focus-visible { outline: 2px solid var(--link); outline-offset: 3px; }
+ol.trace { padding-left: 22px; }
+ol.trace li { margin: 8px 0; }
+ol.trace .action { font-weight: 600; }
+footer { margin-top: 48px; color: var(--muted); font-size: 0.85rem; }
+.empty { color: var(--muted); font-style: italic; }
+</style>
+</head>
+<body>
+<main>
+
+<section class="verdict" aria-label="Verdict">
+  <h1>Low risk <span style="font-weight:400;font-size:0.4em;color:var(--muted)">20/100</span></h1>
+  <div class="branch"><code>pr-3884  (pallets/click#3884)</code> into <code>stable</code></div>
+  <p class="summary">Safe to merge. show_envvar now formats sequence envvars as quoted names and hides empty ones, instead of printing Python list reprs like &#39;[&#39;UNITS&#39;]&#39;. All 65 parametrised cases pass on the branch code, including the 9 new ones that fail on stable.</p>
+  <ul class="reasons"><li>Output-only change in help and error text.</li><li>65/65 tests pass on the branch; the new tests fail on base, so they really test the change.</li><li>Callers only add the hint to error messages and help records.</li></ul>
+</section>
+
+
+
+
+<div class="stats">
+  <div class="stat"><strong>20 of 586</strong><span>tests selected</span></div>
+  <div class="stat"><strong>0.5s</strong><span>test run time</span></div>
+  <div class="stat "><strong>0</strong><span>failing tests</span></div>
+  <div class="stat "><strong>0</strong><span>callers that break</span></div>
+</div>
+
+<h2>What changed</h2>
+
+<div>
+
+  <div class="change">
+    <div class="head">
+      <code>Option.get_error_hint</code>
+      <span class="tag t-high">behavior change</span>
+      <span class="file mono">src/click/core.py</span>
+    </div>
+    <div>Lists each env var quoted and comma-separated; an empty envvar (&#39;&#39; or []) adds no hint.</div>
+  </div>
+
+  <div class="change">
+    <div class="head">
+      <code>Option.get_help_extra</code>
+      <span class="tag t-high">behavior change</span>
+      <span class="file mono">src/click/core.py</span>
+    </div>
+    <div>Treats an empty envvar like None, so the auto_envvar_prefix fallback now applies to it too.</div>
+  </div>
+
+</div>
+
+
+<h2>Who is affected</h2>
+
+<div class="table-wrap"><table>
+  <thead><tr><th>Caller</th><th>Verdict</th><th>Why</th></tr></thead>
+  <tbody>
+  
+    <tr>
+      <td><code>BadParameter.format_message</code><div class="mono" style="color:var(--muted)">src/click/exceptions.py:150</div><div style="color:var(--muted);font-size:0.85rem">calls get_error_hint</div></td>
+      <td><span class="tag t-safe">safe</span></td>
+      <td>Wraps the hint in the error text, so the format change only affects wording.</td>
+    </tr>
+  
+    <tr>
+      <td><code>MissingParameter.format_message</code><div class="mono" style="color:var(--muted)">src/click/exceptions.py:188</div><div style="color:var(--muted);font-size:0.85rem">calls get_error_hint</div></td>
+      <td><span class="tag t-safe">safe</span></td>
+      <td>Only appends the string to the message.</td>
+    </tr>
+  
+    <tr>
+      <td><code>Option.get_help_record</code><div class="mono" style="color:var(--muted)">src/click/core.py:3421</div><div style="color:var(--muted);font-size:0.85rem">calls get_help_extra</div></td>
+      <td><span class="tag t-safe">safe</span></td>
+      <td>Reads the envvars tuple the same way as before.</td>
+    </tr>
+  
+  </tbody>
+</table></div>
+
+
+
+
+<h2>Tests</h2>
+
+<div class="table-wrap"><table>
+  <thead><tr><th>Test</th><th>Result</th></tr></thead>
+  <tbody>
+  
+    <tr>
+      <td><code>tests/test_arguments.py::test_argument_get_help_record_never_none</code></td>
+      <td><span class="tag t-passed">passed</span></td>
+    </tr>
+  
+    <tr>
+      <td><code>tests/test_arguments.py::test_deprecated_empty_help_no_leading_space</code></td>
+      <td><span class="tag t-passed">passed</span></td>
+    </tr>
+  
+    <tr>
+      <td><code>tests/test_arguments.py::test_nargs_envvar</code></td>
+      <td><span class="tag t-passed">passed</span></td>
+    </tr>
+  
+    <tr>
+      <td><code>tests/test_exceptions/test_FileError.py::test_file_error_surrogates</code></td>
+      <td><span class="tag t-passed">passed</span></td>
+    </tr>
+  
+    <tr>
+      <td><code>tests/test_options.py::test_count_default_type_help</code></td>
+      <td><span class="tag t-passed">passed</span></td>
+    </tr>
+  
+    <tr>
+      <td><code>tests/test_options.py::test_deprecated_empty_help_no_leading_space</code></td>
+      <td><span class="tag t-passed">passed</span></td>
+    </tr>
+  
+    <tr>
+      <td><code>tests/test_options.py::test_do_not_show_default_empty_multiple</code></td>
+      <td><span class="tag t-passed">passed</span></td>
+    </tr>
+  
+    <tr>
+      <td><code>tests/test_options.py::test_do_not_show_no_default</code></td>
+      <td><span class="tag t-passed">passed</span></td>
+    </tr>
+  
+    <tr>
+      <td><code>tests/test_options.py::test_dynamic_default_help_special_method</code></td>
+      <td><span class="tag t-passed">passed</span></td>
+    </tr>
+  
+    <tr>
+      <td><code>tests/test_options.py::test_file_type_help_default</code></td>
+      <td><span class="tag t-passed">passed</span></td>
+    </tr>
+  
+    <tr>
+      <td><code>tests/test_options.py::test_help_spec</code></td>
+      <td><span class="tag t-passed">passed</span></td>
+    </tr>
+  
+    <tr>
+      <td><code>tests/test_options.py::test_hide_false_default_boolean_flag_value</code></td>
+      <td><span class="tag t-passed">passed</span></td>
+    </tr>
+  
+    <tr>
+      <td><code>tests/test_options.py::test_intrange_default_help_text</code></td>
+      <td><span class="tag t-passed">passed</span></td>
+    </tr>
+  
+    <tr>
+      <td><code>tests/test_options.py::test_missing_envvar_sequence</code></td>
+      <td><span class="tag t-passed">passed</span></td>
+    </tr>
+  
+    <tr>
+      <td><code>tests/test_options.py::test_show_default_boolean_flag_name</code></td>
+      <td><span class="tag t-passed">passed</span></td>
+    </tr>
+  
+    <tr>
+      <td><code>tests/test_options.py::test_show_default_precedence</code></td>
+      <td><span class="tag t-passed">passed</span></td>
+    </tr>
+  
+    <tr>
+      <td><code>tests/test_options.py::test_show_default_string</code></td>
+      <td><span class="tag t-passed">passed</span></td>
+    </tr>
+  
+    <tr>
+      <td><code>tests/test_options.py::test_show_default_with_empty_string</code></td>
+      <td><span class="tag t-passed">passed</span></td>
+    </tr>
+  
+    <tr>
+      <td><code>tests/test_options.py::test_show_envvar_empty</code></td>
+      <td><span class="tag t-passed">passed</span></td>
+    </tr>
+  
+    <tr>
+      <td><code>tests/test_options.py::test_show_true_default_boolean_flag_value</code></td>
+      <td><span class="tag t-passed">passed</span></td>
+    </tr>
+  
+  </tbody>
+</table></div>
+
+
+
+
+
+
+
+
+
+<details>
+  <summary>How the agent reached this (2 steps)</summary>
+  <ol class="trace">
+  <li><span class="action">impact run-tests --sandbox</span>: With the default command, 9 failed: src/ layout means the editable install imported stable&#39;s code, not the branch.</li><li><span class="action">re-run with PYTHONPATH=src</span>: 65/65 passed on the branch code.</li>
+  </ol>
+</details>
+
+
+<footer>Generated by impact 0.1.0 on 2026-10-06 22:54. Caller analysis is name-based and verified by the agent where marked.</footer>
+</main>
+</body>
+</html>

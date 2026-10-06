@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Impact: pr-3766  (encode/httpx#3766)</title>
+<style>
+:root {
+  --paper: #ffffff; --ink: #1b2230; --muted: #5b6474; --rule: #e3e6eb; --wash: #f5f7fa;
+  --high: #b42318; --medium: #a15c07; --low: #1f7a4d; --link: #2e5aac;
+  --verdict: var(--medium);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #12161d; --ink: #e6e9ee; --muted: #9aa3b2; --rule: #2a313c; --wash: #1a2029;
+    --high: #f97066; --medium: #fdb022; --low: #47cd89; --link: #84adff;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--paper); color: var(--ink);
+  font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+main { max-width: 980px; margin: 0 auto; padding: 48px 24px 80px; }
+code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.86em; }
+h2 { font-size: 1.15rem; margin: 48px 0 12px; }
+p { margin: 0 0 12px; max-width: 72ch; }
+
+.verdict { border-left: 6px solid var(--verdict); padding: 4px 0 4px 24px; }
+.verdict h1 { font-size: clamp(2.6rem, 7vw, 4.2rem); line-height: 1; letter-spacing: -0.02em;
+  margin: 0 0 12px; color: var(--verdict); font-weight: 800; }
+.verdict .branch { color: var(--muted); margin-bottom: 16px; }
+.verdict .summary { font-size: 1.12rem; max-width: 64ch; }
+.reasons { margin: 12px 0 0; padding-left: 18px; color: var(--muted); }
+
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 1px;
+  background: var(--rule); border: 1px solid var(--rule); border-radius: 10px; overflow: hidden; margin-top: 32px; }
+.stat { background: var(--paper); padding: 16px 18px; }
+.stat strong { display: block; font-size: 1.6rem; line-height: 1.2; }
+.stat span { color: var(--muted); font-size: 0.9rem; }
+.stat.bad strong { color: var(--high); }
+
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+th { text-align: left; font-weight: 600; color: var(--muted); padding: 8px 12px 8px 0; border-bottom: 1px solid var(--rule); }
+td { padding: 10px 12px 10px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+tr:last-child td { border-bottom: 0; }
+
+.tag { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 0.8rem; font-weight: 600;
+  border: 1px solid currentColor; white-space: nowrap; }
+.t-breaks, .t-failed, .t-error, .t-high { color: var(--high); }
+.t-unclear, .t-medium, .t-skipped, .t-not_run { color: var(--medium); }
+.t-safe, .t-passed, .t-low { color: var(--low); }
+.t-neutral { color: var(--muted); }
+
+.change { padding: 14px 0; border-bottom: 1px solid var(--rule); }
+.change:last-child { border-bottom: 0; }
+.change .head { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; margin-bottom: 4px; }
+.change .file { color: var(--muted); }
+.message { white-space: pre-wrap; color: var(--muted); margin-top: 6px; max-height: 180px; overflow: auto; }
+
+.box { background: var(--wash); border-radius: 10px; padding: 16px 20px; margin-bottom: 12px; }
+ol.fixes li { margin-bottom: 8px; }
+
+details { border-top: 1px solid var(--rule); margin-top: 48px; padding-top: 16px; }
+summary { cursor: pointer; font-weight: 600; }
+summary:focus-visible, a:focus-visible { outline: 2px solid var(--link); outline-offset: 3px; }
+ol.trace { padding-left: 22px; }
+ol.trace li { margin: 8px 0; }
+ol.trace .action { font-weight: 600; }
+footer { margin-top: 48px; color: var(--muted); font-size: 0.85rem; }
+.empty { color: var(--muted); font-style: italic; }
+</style>
+</head>
+<body>
+<main>
+
+<section class="verdict" aria-label="Verdict">
+  <h1>Medium risk <span style="font-weight:400;font-size:0.4em;color:var(--muted)">55/100</span></h1>
+  <div class="branch"><code>pr-3766  (encode/httpx#3766)</code> into <code>master</code></div>
+  <p class="summary">Fixes the reported case, but not safe as is. When the request path has its own query string, the branch builds a malformed URL with two &#39;?&#39; (/api/users?x=1?key=1), and when params= is passed, the base_url query is silently dropped. All 31 existing tests still pass, but they never put a query on base_url.</p>
+  <ul class="reasons"><li>Behaviour change in BaseClient._merge_url, which every request goes through.</li><li>Generated test confirms the base query is lost when params are given.</li><li>Manual check: &#39;users?x=1&#39; merges to &#39;users?x=1?key=1&#39; (invalid URL).</li><li>Existing tests pass: 31/31.</li></ul>
+</section>
+
+
+
+
+<div class="stats">
+  <div class="stat"><strong>24 of 539</strong><span>tests selected</span></div>
+  <div class="stat"><strong>3.3s</strong><span>test run time</span></div>
+  <div class="stat bad"><strong>1</strong><span>failing tests</span></div>
+  <div class="stat bad"><strong>1</strong><span>callers that break</span></div>
+</div>
+
+<h2>What changed</h2>
+
+<div>
+
+  <div class="change">
+    <div class="head">
+      <code>BaseClient._enforce_trailing_slash</code>
+      <span class="tag t-high">behavior change</span>
+      <span class="file mono">httpx/_client.py</span>
+    </div>
+    <div>Inserts the trailing slash before the query: /api?key=1 becomes /api/?key=1 (it used to be /api?key=1/).</div>
+  </div>
+
+  <div class="change">
+    <div class="head">
+      <code>BaseClient._merge_url</code>
+      <span class="tag t-high">behavior change</span>
+      <span class="file mono">httpx/_client.py</span>
+    </div>
+    <div>Splits base raw_path on &#39;?&#39; and appends the base query after the merged path, without checking whether the merged path already has a query.</div>
+  </div>
+
+</div>
+
+
+<h2>Who is affected</h2>
+
+<div class="table-wrap"><table>
+  <thead><tr><th>Caller</th><th>Verdict</th><th>Why</th></tr></thead>
+  <tbody>
+  
+    <tr>
+      <td><code>BaseClient.build_request</code><div class="mono" style="color:var(--muted)">httpx/_client.py:372</div><div style="color:var(--muted);font-size:0.85rem">calls _merge_url</div></td>
+      <td><span class="tag t-breaks">breaks</span></td>
+      <td>A relative URL with a query, e.g. build_request(&#39;GET&#39;,&#39;users?x=1&#39;), gives https://example.com/api/users?x=1?key=1.</td>
+    </tr>
+  
+    <tr>
+      <td><code>BaseClient.__init__ / base_url setter</code><div class="mono" style="color:var(--muted)">httpx/_client.py:206</div><div style="color:var(--muted);font-size:0.85rem">calls _enforce_trailing_slash</div></td>
+      <td><span class="tag t-safe">safe</span></td>
+      <td>Only reaches the new branch when base_url has a query, which was broken before anyway.</td>
+    </tr>
+  
+  </tbody>
+</table></div>
+
+
+
+
+<h2>Tests</h2>
+
+<div class="table-wrap"><table>
+  <thead><tr><th>Test</th><th>Result</th></tr></thead>
+  <tbody>
+  
+    <tr>
+      <td><code>tests/client/test_impact_base_url_query.py::test_impact_request_query_merges_with_base_url_query</code><div class="message mono">Generated test. base_url=&#39;https://example.com/api?key=1&#39;, params={&#39;page&#39;:&#39;2&#39;} gives https://example.com/api/users?page=2: key=1 is silently dropped.</div></td>
+      <td><span class="tag t-failed">failed</span></td>
+    </tr>
+  
+    <tr>
+      <td><code>tests/client/test_impact_base_url_query.py::test_impact_base_url_query_keeps_trailing_slash_before_query</code></td>
+      <td><span class="tag t-passed">passed</span></td>
+    </tr>
+  
+    <tr>
+      <td><code>tests.client.test_async_client::test_access_content_stream_response[asyncio]</code></td>
+      <td><span class="tag t-passed">passed</span></td>
+    </tr>
+  
+    <tr>
+      <td><code>tests.client.test_async_client::test_build_request[asyncio]</code></td>
+      <td><span class="tag t-passed">passed</span></td>
+    </tr>
+  
+    <tr>
+      <td><code>tests.client.test_async_client::test_raise_for_status[asyncio]</code></td>
+      <td><span class="tag t-passed">passed</span></td>
+    </tr>
+  
+    <tr>
+      <td><code>tests.client.test_async_client::test_stream_response[asyncio]</code></td>
+      <td><span class="tag t-passed">passed</span></td>
+    </tr>
+  
+    <tr>
+      <td><code>tests.client.test_async_client::test_access_content_stream_response[trio]</code></td>
+      <td><span class="tag t-passed">passed</span></td>
+    </tr>
+  
+    <tr>
+      <td><code>tests.client.test_async_client::test_build_request[trio]</code></td>
+      <td><span class="tag t-passed">passed</span></td>
+    </tr>
+  
+    <tr>
+      <td><code>tests.client.test_async_client::test_raise_for_status[trio]</code></td>
+      <td><span class="tag t-passed">passed</span></td>
+    </tr>
+  
+    <tr>
+      <td><code>tests.client.test_async_client::test_stream_response[trio]</code></td>
+      <td><span class="tag t-passed">passed</span></td>
+    </tr>
+  
+    <tr>
+      <td><code>tests.client.test_auth::test_basic_auth_with_stream[asyncio]</code></td>
+      <td><span class="tag t-passed">passed</span></td>
+    </tr>
+  
+    <tr>
+      <td><code>tests.client.test_auth::test_basic_auth_with_stream[trio]</code></td>
+      <td><span class="tag t-passed">passed</span></td>
+    </tr>
+  
+    <tr>
+      <td><code>tests.client.test_client::test_build_post_request</code></td>
+      <td><span class="tag t-passed">passed</span></td>
+    </tr>
+  
+    <tr>
+      <td><code>tests.client.test_client::test_build_request</code></td>
+      <td><span class="tag t-passed">passed</span></td>
+    </tr>
+  
+    <tr>
+      <td><code>tests.client.test_client::test_merge_absolute_url</code></td>
+      <td><span class="tag t-passed">passed</span></td>
+    </tr>
+  
+    <tr>
+      <td><code>tests.client.test_client::test_merge_relative_url</code></td>
+      <td><span class="tag t-passed">passed</span></td>
+    </tr>
+  
+    <tr>
+      <td><code>tests.client.test_client::test_merge_relative_url_with_dotted_path</code></td>
+      <td><span class="tag t-passed">passed</span></td>
+    </tr>
+  
+    <tr>
+      <td><code>tests.client.test_client::test_merge_relative_url_with_encoded_slashes</code></td>
+      <td><span class="tag t-passed">passed</span></td>
+    </tr>
+  
+    <tr>
+      <td><code>tests.client.test_client::test_merge_relative_url_with_path</code></td>
+      <td><span class="tag t-passed">passed</span></td>
+    </tr>
+  
+    <tr>
+      <td><code>tests.client.test_client::test_merge_relative_url_with_path_including_colon</code></td>
+      <td><span class="tag t-passed">passed</span></td>
+    </tr>
+  
+    <tr>
+      <td><code>tests.client.test_client::test_merge_url_with_base_url_query_params</code></td>
+      <td><span class="tag t-passed">passed</span></td>
+    </tr>
+  
+    <tr>
+      <td><code>tests.client.test_client::test_raise_for_status</code></td>
+      <td><span class="tag t-passed">passed</span></td>
+    </tr>
+  
+    <tr>
+      <td><code>tests.client.test_client::test_raw_iterator</code></td>
+      <td><span class="tag t-passed">passed</span></td>
+    </tr>
+  
+    <tr>
+      <td><code>tests.client.test_client::test_stream_iterator</code></td>
+      <td><span class="tag t-passed">passed</span></td>
+    </tr>
+  
+    <tr>
+      <td><code>tests.client.test_client::test_stream_response</code></td>
+      <td><span class="tag t-passed">passed</span></td>
+    </tr>
+  
+    <tr>
+      <td><code>tests.client.test_redirects::test_async_next_request[asyncio]</code></td>
+      <td><span class="tag t-passed">passed</span></td>
+    </tr>
+  
+    <tr>
+      <td><code>tests.client.test_redirects::test_async_next_request[trio]</code></td>
+      <td><span class="tag t-passed">passed</span></td>
+    </tr>
+  
+    <tr>
+      <td><code>tests.client.test_redirects::test_can_stream_if_no_redirect</code></td>
+      <td><span class="tag t-passed">passed</span></td>
+    </tr>
+  
+    <tr>
+      <td><code>tests.client.test_redirects::test_next_request</code></td>
+      <td><span class="tag t-passed">passed</span></td>
+    </tr>
+  
+    <tr>
+      <td><code>tests.test_api::test_stream</code></td>
+      <td><span class="tag t-passed">passed</span></td>
+    </tr>
+  
+    <tr>
+      <td><code>tests.test_auth::test_digest_auth_setting_cookie_in_request</code></td>
+      <td><span class="tag t-passed">passed</span></td>
+    </tr>
+  
+    <tr>
+      <td><code>tests.test_timeouts::test_pool_timeout[asyncio]</code></td>
+      <td><span class="tag t-passed">passed</span></td>
+    </tr>
+  
+    <tr>
+      <td><code>tests.test_timeouts::test_pool_timeout[trio]</code></td>
+      <td><span class="tag t-passed">passed</span></td>
+    </tr>
+  
+  </tbody>
+</table></div>
+
+
+
+<h2>Missing coverage</h2>
+
+<div class="box">
+  <p>No existing test sets a query on base_url and also passes params, or a path that has its own query.</p>
+  
+  <div>Generated <code>tests/client/test_impact_base_url_query.py</code>: <span class="tag t-failed">failed</span>
+   <strong>confirms the risk</strong></div>
+  <p style="margin-top:8px;color:var(--muted)">1 of 2 generated tests fails on the branch: the base_url query is dropped when params are passed.</p>
+  
+</div>
+
+
+
+
+<h2>Suggested fixes</h2>
+<ol class="fixes"><li>Merge queries with URL.copy_merge_params / QueryParams instead of byte-concatenating &#39;?&#39; + base_query.</li><li>Add tests for base_url query + request params, and base_url query + path query.</li></ol>
+
+
+
+
+
+<details>
+  <summary>How the agent reached this (3 steps)</summary>
+  <ol class="trace">
+  <li><span class="action">impact facts</span>: _enforce_trailing_slash flagged with &#39;no tests reach this code&#39;: the tool does not follow Client(...) to __init__ or property setters.</li><li><span class="action">impact run-tests --sandbox</span>: 24 selected ids expanded to 31 parametrised cases; all passed.</li><li><span class="action">generated test</span>: Wrote 2 tests in the sandbox; 1 failed and confirms the risk.</li>
+  </ol>
+</details>
+
+
+<footer>Generated by impact 0.1.0 on 2026-10-06 22:54. Caller analysis is name-based and verified by the agent where marked.</footer>
+</main>
+</body>
+</html>

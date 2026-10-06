@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Impact: pr-2678  (spring-projects/spring-petclinic#2678)</title>
+<style>
+:root {
+  --paper: #ffffff; --ink: #1b2230; --muted: #5b6474; --rule: #e3e6eb; --wash: #f5f7fa;
+  --high: #b42318; --medium: #a15c07; --low: #1f7a4d; --link: #2e5aac;
+  --verdict: var(--medium);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #12161d; --ink: #e6e9ee; --muted: #9aa3b2; --rule: #2a313c; --wash: #1a2029;
+    --high: #f97066; --medium: #fdb022; --low: #47cd89; --link: #84adff;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--paper); color: var(--ink);
+  font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+main { max-width: 980px; margin: 0 auto; padding: 48px 24px 80px; }
+code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.86em; }
+h2 { font-size: 1.15rem; margin: 48px 0 12px; }
+p { margin: 0 0 12px; max-width: 72ch; }
+
+.verdict { border-left: 6px solid var(--verdict); padding: 4px 0 4px 24px; }
+.verdict h1 { font-size: clamp(2.6rem, 7vw, 4.2rem); line-height: 1; letter-spacing: -0.02em;
+  margin: 0 0 12px; color: var(--verdict); font-weight: 800; }
+.verdict .branch { color: var(--muted); margin-bottom: 16px; }
+.verdict .summary { font-size: 1.12rem; max-width: 64ch; }
+.reasons { margin: 12px 0 0; padding-left: 18px; color: var(--muted); }
+
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 1px;
+  background: var(--rule); border: 1px solid var(--rule); border-radius: 10px; overflow: hidden; margin-top: 32px; }
+.stat { background: var(--paper); padding: 16px 18px; }
+.stat strong { display: block; font-size: 1.6rem; line-height: 1.2; }
+.stat span { color: var(--muted); font-size: 0.9rem; }
+.stat.bad strong { color: var(--high); }
+
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+th { text-align: left; font-weight: 600; color: var(--muted); padding: 8px 12px 8px 0; border-bottom: 1px solid var(--rule); }
+td { padding: 10px 12px 10px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+tr:last-child td { border-bottom: 0; }
+
+.tag { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 0.8rem; font-weight: 600;
+  border: 1px solid currentColor; white-space: nowrap; }
+.t-breaks, .t-failed, .t-error, .t-high { color: var(--high); }
+.t-unclear, .t-medium, .t-skipped, .t-not_run { color: var(--medium); }
+.t-safe, .t-passed, .t-low { color: var(--low); }
+.t-neutral { color: var(--muted); }
+
+.change { padding: 14px 0; border-bottom: 1px solid var(--rule); }
+.change:last-child { border-bottom: 0; }
+.change .head { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; margin-bottom: 4px; }
+.change .file { color: var(--muted); }
+.message { white-space: pre-wrap; color: var(--muted); margin-top: 6px; max-height: 180px; overflow: auto; }
+
+.box { background: var(--wash); border-radius: 10px; padding: 16px 20px; margin-bottom: 12px; }
+ol.fixes li { margin-bottom: 8px; }
+
+details { border-top: 1px solid var(--rule); margin-top: 48px; padding-top: 16px; }
+summary { cursor: pointer; font-weight: 600; }
+summary:focus-visible, a:focus-visible { outline: 2px solid var(--link); outline-offset: 3px; }
+ol.trace { padding-left: 22px; }
+ol.trace li { margin: 8px 0; }
+ol.trace .action { font-weight: 600; }
+footer { margin-top: 48px; color: var(--muted); font-size: 0.85rem; }
+.empty { color: var(--muted); font-style: italic; }
+</style>
+</head>
+<body>
+<main>
+
+<section class="verdict" aria-label="Verdict">
+  <h1>Medium risk <span style="font-weight:400;font-size:0.4em;color:var(--muted)">45/100</span></h1>
+  <div class="branch"><code>pr-2678  (spring-projects/spring-petclinic#2678)</code> into <code>main</code></div>
+  <p class="summary">Works as written, and its 5 new tests pass, but it adds an unauthenticated POST /owners/{id}/delete that permanently deletes an owner with all pets and visits. The app has no Spring Security, so the endpoint has no CSRF or auth protection. Merge only if that is acceptable for a demo app.</p>
+  <ul class="reasons"><li>New destructive endpoint, cascades to pets and visits (CascadeType.ALL).</li><li>No CSRF or authentication: no spring-boot-starter-security in pom.xml.</li><li>Missing owner raises IllegalArgumentException, which returns a 500 instead of a 404.</li><li>All 5 selected tests pass.</li></ul>
+</section>
+
+
+
+
+<div class="stats">
+  <div class="stat"><strong>5 of 81</strong><span>tests selected</span></div>
+  <div class="stat"><strong>9.6s</strong><span>test run time</span></div>
+  <div class="stat "><strong>0</strong><span>failing tests</span></div>
+  <div class="stat "><strong>0</strong><span>callers that break</span></div>
+</div>
+
+<h2>What changed</h2>
+
+<div>
+
+  <div class="change">
+    <div class="head">
+      <code>OwnerController.deleteOwner</code>
+      <span class="tag t-neutral">new</span>
+      <span class="file mono">src/main/java/org/springframework/samples/petclinic/owner/OwnerController.java</span>
+    </div>
+    <div>@PostMapping(&#34;/owners/{ownerId}/delete&#34;): loads the owner, deletes it and redirects to /owners/find with a flash message.</div>
+  </div>
+
+  <div class="change">
+    <div class="head">
+      <code>OwnerRepository.delete</code>
+      <span class="tag t-neutral">new</span>
+      <span class="file mono">src/main/java/org/springframework/samples/petclinic/owner/OwnerRepository.java</span>
+    </div>
+    <div>Redeclares JpaRepository.delete(Owner); no behaviour change, just documentation.</div>
+  </div>
+
+  <div class="change">
+    <div class="head">
+      <code>ownerDetails.html</code>
+      <span class="tag t-neutral">config change</span>
+      <span class="file mono">src/main/resources/templates/owners/ownerDetails.html</span>
+    </div>
+    <div>Adds a Delete Owner button (POST form with a JS confirm). Not analysed by impact: templates are outside the call graph.</div>
+  </div>
+
+</div>
+
+
+<h2>Who is affected</h2>
+
+<div class="table-wrap"><table>
+  <thead><tr><th>Caller</th><th>Verdict</th><th>Why</th></tr></thead>
+  <tbody>
+  
+    <tr>
+      <td><code>ownerDetails.html form</code><div class="mono" style="color:var(--muted)">src/main/resources/templates/owners/ownerDetails.html:40</div><div style="color:var(--muted);font-size:0.85rem">calls deleteOwner</div></td>
+      <td><span class="tag t-safe">safe</span></td>
+      <td>Relative action resolves to /owners/{id}/delete and matches the mapping. Found by reading the template; the tool does not link templates to controllers.</td>
+    </tr>
+  
+  </tbody>
+</table></div>
+
+
+
+
+<h2>Tests</h2>
+
+<div class="table-wrap"><table>
+  <thead><tr><th>Test</th><th>Result</th></tr></thead>
+  <tbody>
+  
+    <tr>
+      <td><code>org.springframework.samples.petclinic.owner.OwnerControllerTests::shouldDeleteOwnerAndRedirectToFindPage</code></td>
+      <td><span class="tag t-passed">passed</span></td>
+    </tr>
+  
+    <tr>
+      <td><code>org.springframework.samples.petclinic.owner.OwnerControllerTests::shouldRejectDeleteViaGetRequest</code></td>
+      <td><span class="tag t-passed">passed</span></td>
+    </tr>
+  
+    <tr>
+      <td><code>org.springframework.samples.petclinic.owner.OwnerControllerTests::shouldPassOwnerWithPetsToDeleteSoCascadeCanApply</code></td>
+      <td><span class="tag t-passed">passed</span></td>
+    </tr>
+  
+    <tr>
+      <td><code>org.springframework.samples.petclinic.owner.OwnerControllerTests::shouldIncludeOwnerNameInDeleteSuccessMessage</code></td>
+      <td><span class="tag t-passed">passed</span></td>
+    </tr>
+  
+    <tr>
+      <td><code>org.springframework.samples.petclinic.owner.OwnerControllerTests::shouldThrowExceptionWhenDeletingNonExistentOwner</code></td>
+      <td><span class="tag t-passed">passed</span></td>
+    </tr>
+  
+  </tbody>
+</table></div>
+
+
+
+<h2>Missing coverage</h2>
+
+<div class="box">
+  <p>No test covers deleting an owner who has visits (a cascade 2 levels deep), or a cross-site POST without a token.</p>
+  
+</div>
+
+
+
+
+<h2>Suggested fixes</h2>
+<ol class="fixes"><li>Return 404 for an unknown owner (ResponseStatusException) instead of IllegalArgumentException.</li><li>If this goes past a demo, add Spring Security with CSRF, or at least require a confirmation token.</li><li>Add a deleteOwner key to messages_*.properties for other locales (they fall back to English for now).</li></ol>
+
+
+
+<h2>Rules applied</h2>
+<div class="table-wrap"><table>
+  <thead><tr><th>Rule</th><th>Effect on this report</th></tr></thead>
+  <tbody>
+  
+    <tr><td>New endpoints that delete data must be called out in the summary, with whether CSRF or auth protects them.<div style="color:var(--muted);font-size:0.85rem">team · t-e7ec</div></td><td>Summary leads with the unauthenticated delete endpoint; risk raised from low (tool score 9 for the method) to medium.</td></tr>
+  
+  </tbody>
+</table></div>
+
+
+
+<details>
+  <summary>How the agent reached this (3 steps)</summary>
+  <ol class="trace">
+  <li><span class="action">impact facts</span>: Tool ranked the OwnerController class (34) above deleteOwner (9) because adding lines inside a class marks the class as modified.</li><li><span class="action">read code</span>: Checked pom.xml for spring-security and Owner/Pet cascade mappings.</li><li><span class="action">impact run-tests --sandbox</span>: 5/5 passed in 9.6s.</li>
+  </ol>
+</details>
+
+
+<footer>Generated by impact 0.1.0 on 2026-10-06 22:54. Caller analysis is name-based and verified by the agent where marked.</footer>
+</main>
+</body>
+</html>

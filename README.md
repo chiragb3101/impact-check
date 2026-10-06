@@ -54,9 +54,36 @@ impact-reports/
 | `impact schema` | Prints the findings JSON schema. |
 | `impact report FINDINGS.json` | Validates findings and renders the HTML report. |
 | `impact sandbox status` / `cleanup` | Lists files written in the sandbox / removes it. |
+| `impact rules [add TEXT \| remove ID \| path] [--scope user\|local\|team]` | Natural-language rules the agent follows when writing reports. |
 
 Test id formats: Python `tests/test_x.py::test_name` (relative to the module), Java `ClassTest#method`,
 JS/TS the test file path relative to the module.
+
+## Rules: your own memory for reports
+
+Each person can keep plain-language rules that the agent reads before every report. It follows
+them when judging risk and writing the report, and lists the ones it used under **Rules applied**.
+Rules can change emphasis and severity. They never override test results or what the code does.
+
+```bash
+impact rules add "Treat any change under billing/ as at least medium risk."              # personal, every repo
+impact rules add "Ignore churn in generated/ when scoring." --scope local                  # personal, this repo
+impact rules add "Call out new endpoints that delete data, with their auth." --scope team  # shared; commit impact-rules.md
+impact rules                 # list all rules with ids
+impact rules remove u-1a2b   # forget one
+```
+
+| Scope | File | Shared? |
+|---|---|---|
+| `user` (default) | `~/.config/impact/rules.md` (or `$IMPACT_HOME/rules.md`) | No |
+| `local` | `<repo>/.impact/rules.md` | No (`.impact/` is gitignored) |
+| `team` | `<repo>/impact-rules.md` | Yes, commit it |
+
+The files are ordinary Markdown with one rule per bullet, so you can edit them by hand. When
+rules conflict, `local` beats `user`, and `user` beats `team`. In chat you can also tell the agent
+"from now on, always…" or "remember that…", and it saves the rule with `impact rules add`.
+Rules you write by hand get ids from their line number. Add rules with the command when you want
+ids that stay the same.
 
 ## Use with Copilot
 
