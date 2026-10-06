@@ -1,0 +1,6 @@
+__pycache__/
+*.egg-info/
+.venv/
+.impact/
+impact-reports/
+.DS_Store

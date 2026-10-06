@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Impact: feature/discount-rules</title>
+<style>
+:root {
+  --paper: #ffffff; --ink: #1b2230; --muted: #5b6474; --rule: #e3e6eb; --wash: #f5f7fa;
+  --high: #b42318; --medium: #a15c07; --low: #1f7a4d; --link: #2e5aac;
+  --verdict: var(--high);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #12161d; --ink: #e6e9ee; --muted: #9aa3b2; --rule: #2a313c; --wash: #1a2029;
+    --high: #f97066; --medium: #fdb022; --low: #47cd89; --link: #84adff;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--paper); color: var(--ink);
+  font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+main { max-width: 980px; margin: 0 auto; padding: 48px 24px 80px; }
+code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.86em; }
+h2 { font-size: 1.15rem; margin: 48px 0 12px; }
+p { margin: 0 0 12px; max-width: 72ch; }
+
+.verdict { border-left: 6px solid var(--verdict); padding: 4px 0 4px 24px; }
+.verdict h1 { font-size: clamp(2.6rem, 7vw, 4.2rem); line-height: 1; letter-spacing: -0.02em;
+  margin: 0 0 12px; color: var(--verdict); font-weight: 800; }
+.verdict .branch { color: var(--muted); margin-bottom: 16px; }
+.verdict .summary { font-size: 1.12rem; max-width: 64ch; }
+.reasons { margin: 12px 0 0; padding-left: 18px; color: var(--muted); }
+
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 1px;
+  background: var(--rule); border: 1px solid var(--rule); border-radius: 10px; overflow: hidden; margin-top: 32px; }
+.stat { background: var(--paper); padding: 16px 18px; }
+.stat strong { display: block; font-size: 1.6rem; line-height: 1.2; }
+.stat span { color: var(--muted); font-size: 0.9rem; }
+.stat.bad strong { color: var(--high); }
+
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+th { text-align: left; font-weight: 600; color: var(--muted); padding: 8px 12px 8px 0; border-bottom: 1px solid var(--rule); }
+td { padding: 10px 12px 10px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+tr:last-child td { border-bottom: 0; }
+
+.tag { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 0.8rem; font-weight: 600;
+  border: 1px solid currentColor; white-space: nowrap; }
+.t-breaks, .t-failed, .t-error, .t-high { color: var(--high); }
+.t-unclear, .t-medium, .t-skipped, .t-not_run { color: var(--medium); }
+.t-safe, .t-passed, .t-low { color: var(--low); }
+.t-neutral { color: var(--muted); }
+
+.change { padding: 14px 0; border-bottom: 1px solid var(--rule); }
+.change:last-child { border-bottom: 0; }
+.change .head { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; margin-bottom: 4px; }
+.change .file { color: var(--muted); }
+.message { white-space: pre-wrap; color: var(--muted); margin-top: 6px; max-height: 180px; overflow: auto; }
+
+.box { background: var(--wash); border-radius: 10px; padding: 16px 20px; margin-bottom: 12px; }
+ol.fixes li { margin-bottom: 8px; }
+
+details { border-top: 1px solid var(--rule); margin-top: 48px; padding-top: 16px; }
+summary { cursor: pointer; font-weight: 600; }
+summary:focus-visible, a:focus-visible { outline: 2px solid var(--link); outline-offset: 3px; }
+ol.trace { padding-left: 22px; }
+ol.trace li { margin: 8px 0; }
+ol.trace .action { font-weight: 600; }
+footer { margin-top: 48px; color: var(--muted); font-size: 0.85rem; }
+.empty { color: var(--muted); font-style: italic; }
+</style>
+</head>
+<body>
+<main>
+
+<section class="verdict" aria-label="Verdict">
+  <h1>High risk <span style="font-weight:400;font-size:0.4em;color:var(--muted)">78/100</span></h1>
+  <div class="branch"><code>feature/discount-rules</code> into <code>main</code></div>
+  <p class="summary">Not safe to merge yet. calculate_discount now raises ValueError for expired coupons instead of returning 0, and two callers do not handle it: checkout will crash and subscription renewals will fail. The migration also renames a column that coupon_repo.py still queries.</p>
+  <ul class="reasons"><li>Behavior change in a function with 3 direct callers, 2 of which break.</li><li>Existing test test_total_with_expired_coupon fails on this branch.</li><li>Column coupons.expires_at is renamed but still referenced in code.</li><li>pricing.py had 3 bug-fix commits in the last 180 days.</li></ul>
+</section>
+
+
+
+
+<div class="stats">
+  <div class="stat"><strong>3 of 5</strong><span>tests selected</span></div>
+  <div class="stat"><strong>0.3s</strong><span>test run time</span></div>
+  <div class="stat bad"><strong>1</strong><span>failing tests</span></div>
+  <div class="stat bad"><strong>2</strong><span>callers that break</span></div>
+</div>
+
+<h2>What changed</h2>
+
+<div>
+
+  <div class="change">
+    <div class="head">
+      <code>calculate_discount</code>
+      <span class="tag t-high">behavior change</span>
+      <span class="file mono">api/billing/pricing.py</span>
+    </div>
+    <div>Expired coupons now raise ValueError(&#34;Coupon has expired&#34;). Before, the function returned 0.</div>
+  </div>
+
+  <div class="change">
+    <div class="head">
+      <code>coupons.expires_at</code>
+      <span class="tag t-high">schema change</span>
+      <span class="file mono">db/migrations/V12__rename_coupon_expiry.sql</span>
+    </div>
+    <div>Column renamed to valid_until, plus a new index created without CONCURRENTLY.</div>
+  </div>
+
+</div>
+
+
+<h2>Who is affected</h2>
+
+<div class="table-wrap"><table>
+  <thead><tr><th>Caller</th><th>Verdict</th><th>Why</th></tr></thead>
+  <tbody>
+  
+    <tr>
+      <td><code>OrderService.total</code><div class="mono" style="color:var(--muted)">api/checkout/order_service.py:6</div><div style="color:var(--muted);font-size:0.85rem">calls calculate_discount</div></td>
+      <td><span class="tag t-breaks">breaks</span></td>
+      <td>Calls calculate_discount without handling ValueError, so checkout with an expired coupon raises instead of charging full price.</td>
+    </tr>
+  
+    <tr>
+      <td><code>renew</code><div class="mono" style="color:var(--muted)">api/subscriptions/renewal_job.py:6</div><div style="color:var(--muted);font-size:0.85rem">calls calculate_discount</div></td>
+      <td><span class="tag t-breaks">breaks</span></td>
+      <td>No error handling; one expired coupon stops run_renewals for every subscription after it. Confirmed by a generated test.</td>
+    </tr>
+  
+    <tr>
+      <td><code>build_invoice</code><div class="mono" style="color:var(--muted)">api/invoices/invoice_builder.py:6</div><div style="color:var(--muted);font-size:0.85rem">calls calculate_discount</div></td>
+      <td><span class="tag t-safe">safe</span></td>
+      <td>Already wraps the call in try/except ValueError and falls back to a zero discount.</td>
+    </tr>
+  
+  </tbody>
+</table></div>
+
+
+
+<h2>Database changes</h2>
+
+<div class="box">
+  <span class="tag t-high">high</span> coupons.expires_at renamed to valid_until.
+  <ul><li class="mono">api/billing/coupon_repo.py:2 still filters on expires_at</li></ul>
+</div>
+
+<div class="box">
+  <span class="tag t-medium">medium</span> CREATE INDEX on coupons without CONCURRENTLY may lock the table during deploy.
+  
+</div>
+
+
+
+<h2>Tests</h2>
+
+<div class="table-wrap"><table>
+  <thead><tr><th>Test</th><th>Result</th></tr></thead>
+  <tbody>
+  
+    <tr>
+      <td><code>tests/test_checkout.py::test_total_with_expired_coupon</code><div class="message mono">ValueError: Coupon has expired</div></td>
+      <td><span class="tag t-failed">failed</span></td>
+    </tr>
+  
+    <tr>
+      <td><code>tests/test_checkout.py::test_total_without_coupon</code></td>
+      <td><span class="tag t-passed">passed</span></td>
+    </tr>
+  
+    <tr>
+      <td><code>tests/test_pricing.py::test_valid_coupon</code></td>
+      <td><span class="tag t-passed">passed</span></td>
+    </tr>
+  
+  </tbody>
+</table></div>
+
+
+
+<h2>Missing coverage</h2>
+
+<div class="box">
+  <p>No test covered subscription renewal with an expired coupon.</p>
+  
+  <div>Generated <code>api/tests/test_impact_renewal_expired.py</code>: <span class="tag t-failed">failed</span>
+   <strong>confirms the risk</strong></div>
+  <p style="margin-top:8px;color:var(--muted)">run_renewals raised ValueError: Coupon has expired.</p>
+  
+</div>
+
+
+
+
+<h2>Suggested fixes</h2>
+<ol class="fixes"><li>Catch ValueError in OrderService.total and charge the full price, or keep returning 0 from calculate_discount and add a separate is_expired check.</li><li>Handle expired coupons per subscription in renew so one bad coupon does not stop the whole renewal run.</li><li>Update coupon_repo.find_active to use valid_until in the same release as the migration.</li><li>Create the index with CREATE INDEX CONCURRENTLY.</li></ol>
+
+
+
+<details>
+  <summary>How the agent reached this (7 steps)</summary>
+  <ol class="trace">
+  <li><span class="action">impact facts</span>: 1 changed function, 3 direct callers, 1 renamed column, 3 tests selected out of 5.</li><li><span class="action">read api/billing/pricing.py</span>: Return 0 replaced by raise ValueError: behavior change, not a refactor.</li><li><span class="action">read 3 callers</span>: build_invoice handles ValueError; OrderService.total and renew do not.</li><li><span class="action">impact sandbox create</span>: Worktree created for feature/discount-rules.</li><li><span class="action">impact run-tests</span>: 2 passed, 1 failed: test_total_with_expired_coupon.</li><li><span class="action">write and run generated test</span>: test_renewal_with_expired_coupon fails, confirming renewals break.</li><li><span class="action">impact db-usage coupons.expires_at</span>: coupon_repo.py still uses the old column name.</li>
+  </ol>
+</details>
+
+
+<footer>Generated by impact 0.1.0 on 2026-10-06 17:04. Caller analysis is name-based and verified by the agent where marked.</footer>
+</main>
+</body>
+</html>

@@ -1,0 +1,17 @@
+modules:
+  - path: api
+    language: python
+    test_command: python3 -m pytest -q {tests} --junitxml={junit}
+  - path: billing-service
+    language: java
+    test_command: mvn -q test -Dtest={tests} -Dsurefire.failIfNoSpecifiedTests=false
+    junit: target/surefire-reports
+  - path: web
+    language: typescript
+    test_command: npx jest --ci {tests}
+    env:
+      JEST_JUNIT_OUTPUT_FILE: "{junit}"
+  - path: db/migrations
+    language: sql
+ignore: [generated, vendor]
+history_days: 180

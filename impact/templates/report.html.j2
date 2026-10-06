@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Impact: {{ f.branch }}</title>
+<style>
+:root {
+  --paper: #ffffff; --ink: #1b2230; --muted: #5b6474; --rule: #e3e6eb; --wash: #f5f7fa;
+  --high: #b42318; --medium: #a15c07; --low: #1f7a4d; --link: #2e5aac;
+  --verdict: var(--{{ f.risk.level }});
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #12161d; --ink: #e6e9ee; --muted: #9aa3b2; --rule: #2a313c; --wash: #1a2029;
+    --high: #f97066; --medium: #fdb022; --low: #47cd89; --link: #84adff;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--paper); color: var(--ink);
+  font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+main { max-width: 980px; margin: 0 auto; padding: 48px 24px 80px; }
+code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.86em; }
+h2 { font-size: 1.15rem; margin: 48px 0 12px; }
+p { margin: 0 0 12px; max-width: 72ch; }
+
+.verdict { border-left: 6px solid var(--verdict); padding: 4px 0 4px 24px; }
+.verdict h1 { font-size: clamp(2.6rem, 7vw, 4.2rem); line-height: 1; letter-spacing: -0.02em;
+  margin: 0 0 12px; color: var(--verdict); font-weight: 800; }
+.verdict .branch { color: var(--muted); margin-bottom: 16px; }
+.verdict .summary { font-size: 1.12rem; max-width: 64ch; }
+.reasons { margin: 12px 0 0; padding-left: 18px; color: var(--muted); }
+
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 1px;
+  background: var(--rule); border: 1px solid var(--rule); border-radius: 10px; overflow: hidden; margin-top: 32px; }
+.stat { background: var(--paper); padding: 16px 18px; }
+.stat strong { display: block; font-size: 1.6rem; line-height: 1.2; }
+.stat span { color: var(--muted); font-size: 0.9rem; }
+.stat.bad strong { color: var(--high); }
+
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+th { text-align: left; font-weight: 600; color: var(--muted); padding: 8px 12px 8px 0; border-bottom: 1px solid var(--rule); }
+td { padding: 10px 12px 10px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+tr:last-child td { border-bottom: 0; }
+
+.tag { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 0.8rem; font-weight: 600;
+  border: 1px solid currentColor; white-space: nowrap; }
+.t-breaks, .t-failed, .t-error, .t-high { color: var(--high); }
+.t-unclear, .t-medium, .t-skipped, .t-not_run { color: var(--medium); }
+.t-safe, .t-passed, .t-low { color: var(--low); }
+.t-neutral { color: var(--muted); }
+
+.change { padding: 14px 0; border-bottom: 1px solid var(--rule); }
+.change:last-child { border-bottom: 0; }
+.change .head { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; margin-bottom: 4px; }
+.change .file { color: var(--muted); }
+.message { white-space: pre-wrap; color: var(--muted); margin-top: 6px; max-height: 180px; overflow: auto; }
+
+.box { background: var(--wash); border-radius: 10px; padding: 16px 20px; margin-bottom: 12px; }
+ol.fixes li { margin-bottom: 8px; }
+
+details { border-top: 1px solid var(--rule); margin-top: 48px; padding-top: 16px; }
+summary { cursor: pointer; font-weight: 600; }
+summary:focus-visible, a:focus-visible { outline: 2px solid var(--link); outline-offset: 3px; }
+ol.trace { padding-left: 22px; }
+ol.trace li { margin: 8px 0; }
+ol.trace .action { font-weight: 600; }
+footer { margin-top: 48px; color: var(--muted); font-size: 0.85rem; }
+.empty { color: var(--muted); font-style: italic; }
+</style>
+</head>
+<body>
+<main>
+
+<section class="verdict" aria-label="Verdict">
+  <h1>{{ f.risk.level | capitalize }} risk{% if f.risk.score is defined %} <span style="font-weight:400;font-size:0.4em;color:var(--muted)">{{ f.risk.score }}/100</span>{% endif %}</h1>
+  <div class="branch"><code>{{ f.branch }}</code> into <code>{{ f.base }}</code></div>
+  <p class="summary">{{ f.summary }}</p>
+  <ul class="reasons">{% for r in f.risk.reasons %}<li>{{ r }}</li>{% endfor %}</ul>
+</section>
+
+{% set failed = f.tests.results | selectattr("status", "in", ["failed", "error"]) | list %}
+{% set breaking = f.callers | selectattr("verdict", "equalto", "breaks") | list %}
+{% set unclear = f.callers | selectattr("verdict", "equalto", "unclear") | list %}
+<div class="stats">
+  <div class="stat"><strong>{{ f.tests.selected }}{% if f.tests.total_in_index %} of {{ "{:,}".format(f.tests.total_in_index) }}{% endif %}</strong><span>tests selected</span></div>
+  {% if f.tests.seconds is defined %}<div class="stat"><strong>{{ f.tests.seconds | round(1) }}s</strong><span>test run time</span></div>{% endif %}
+  <div class="stat {{ 'bad' if failed }}"><strong>{{ failed | length }}</strong><span>failing tests</span></div>
+  <div class="stat {{ 'bad' if breaking }}"><strong>{{ breaking | length }}</strong><span>callers that break{% if unclear %}, {{ unclear|length }} unclear{% endif %}</span></div>
+</div>
+
+<h2>What changed</h2>
+{% if f.changes %}
+<div>
+{% for c in f.changes %}
+  <div class="change">
+    <div class="head">
+      <code>{{ c.symbol }}</code>
+      <span class="tag {{ 't-high' if c.kind in ['behavior_change','signature_change','deleted','schema_change'] else 't-neutral' }}">{{ c.kind | replace('_', ' ') }}</span>
+      <span class="file mono">{{ c.file }}</span>
+    </div>
+    <div>{{ c.description }}</div>
+  </div>
+{% endfor %}
+</div>
+{% else %}<p class="empty">No code changes reported.</p>{% endif %}
+
+<h2>Who is affected</h2>
+{% if f.callers %}
+<div class="table-wrap"><table>
+  <thead><tr><th>Caller</th><th>Verdict</th><th>Why</th></tr></thead>
+  <tbody>
+  {% for c in f.callers %}
+    <tr>
+      <td><code>{{ c.caller }}</code><div class="mono" style="color:var(--muted)">{{ c.file }}{% if c.line %}:{{ c.line }}{% endif %}</div>{% if c.for_symbol %}<div style="color:var(--muted);font-size:0.85rem">calls {{ c.for_symbol }}</div>{% endif %}</td>
+      <td><span class="tag t-{{ c.verdict }}">{{ c.verdict }}</span></td>
+      <td>{{ c.reason }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+{% else %}<p class="empty">No callers found for the changed code.</p>{% endif %}
+
+{% if f.schema_changes %}
+<h2>Database changes</h2>
+{% for s in f.schema_changes %}
+<div class="box">
+  <span class="tag t-{{ s.severity }}">{{ s.severity }}</span> {{ s.description }}
+  {% if s.affected_code %}<ul>{% for a in s.affected_code %}<li class="mono">{{ a }}</li>{% endfor %}</ul>{% endif %}
+</div>
+{% endfor %}
+{% endif %}
+
+<h2>Tests</h2>
+{% if f.tests.results %}
+<div class="table-wrap"><table>
+  <thead><tr><th>Test</th><th>Result</th></tr></thead>
+  <tbody>
+  {% for t in f.tests.results %}
+    <tr>
+      <td><code>{{ t.test }}</code>{% if t.message %}<div class="message mono">{{ t.message }}</div>{% endif %}</td>
+      <td><span class="tag t-{{ t.status }}">{{ t.status }}</span></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+{% else %}<p class="empty">No tests were run.</p>{% endif %}
+
+{% if f.missing_coverage %}
+<h2>Missing coverage</h2>
+{% for m in f.missing_coverage %}
+<div class="box">
+  <p>{{ m.description }}</p>
+  {% if m.generated_test %}
+  <div>Generated <code>{{ m.generated_test.path }}</code>: <span class="tag t-{{ m.generated_test.status }}">{{ m.generated_test.status | replace('_',' ') }}</span>
+  {% if m.generated_test.confirms_risk %} <strong>confirms the risk</strong>{% endif %}</div>
+  {% if m.generated_test.note %}<p style="margin-top:8px;color:var(--muted)">{{ m.generated_test.note }}</p>{% endif %}
+  {% endif %}
+</div>
+{% endfor %}
+{% endif %}
+
+{% if f.suggested_fixes %}
+<h2>Suggested fixes</h2>
+<ol class="fixes">{% for s in f.suggested_fixes %}<li>{{ s }}</li>{% endfor %}</ol>
+{% endif %}
+
+{% if f.agent_trace %}
+<details>
+  <summary>How the agent reached this ({{ f.agent_trace | length }} steps)</summary>
+  <ol class="trace">
+  {% for s in f.agent_trace %}<li><span class="action">{{ s.action }}</span>: {{ s.detail }}</li>{% endfor %}
+  </ol>
+</details>
+{% endif %}
+
+<footer>Generated by impact {{ version }} on {{ generated_at }}. Caller analysis is name-based and verified by the agent where marked.</footer>
+</main>
+</body>
+</html>

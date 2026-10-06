@@ -1,0 +1,64 @@
+{
+  "branch": "feature/discount-rules",
+  "base": "main",
+  "summary": "Not safe to merge yet. calculate_discount now raises ValueError for expired coupons instead of returning 0, and two callers do not handle it: checkout will crash and subscription renewals will fail. The migration also renames a column that coupon_repo.py still queries.",
+  "risk": {
+    "level": "high",
+    "score": 78,
+    "reasons": [
+      "Behavior change in a function with 3 direct callers, 2 of which break.",
+      "Existing test test_total_with_expired_coupon fails on this branch.",
+      "Column coupons.expires_at is renamed but still referenced in code.",
+      "pricing.py had 3 bug-fix commits in the last 180 days."
+    ]
+  },
+  "changes": [
+    {"symbol": "calculate_discount", "file": "api/billing/pricing.py", "kind": "behavior_change",
+     "description": "Expired coupons now raise ValueError(\"Coupon has expired\"). Before, the function returned 0."},
+    {"symbol": "coupons.expires_at", "file": "db/migrations/V12__rename_coupon_expiry.sql", "kind": "schema_change",
+     "description": "Column renamed to valid_until, plus a new index created without CONCURRENTLY."}
+  ],
+  "callers": [
+    {"caller": "OrderService.total", "file": "api/checkout/order_service.py", "line": 6, "for_symbol": "calculate_discount",
+     "verdict": "breaks", "reason": "Calls calculate_discount without handling ValueError, so checkout with an expired coupon raises instead of charging full price."},
+    {"caller": "build_invoice", "file": "api/invoices/invoice_builder.py", "line": 6, "for_symbol": "calculate_discount",
+     "verdict": "safe", "reason": "Already wraps the call in try/except ValueError and falls back to a zero discount."},
+    {"caller": "renew", "file": "api/subscriptions/renewal_job.py", "line": 6, "for_symbol": "calculate_discount",
+     "verdict": "breaks", "reason": "No error handling; one expired coupon stops run_renewals for every subscription after it. Confirmed by a generated test."}
+  ],
+  "schema_changes": [
+    {"description": "coupons.expires_at renamed to valid_until.", "severity": "high",
+     "affected_code": ["api/billing/coupon_repo.py:2 still filters on expires_at"]},
+    {"description": "CREATE INDEX on coupons without CONCURRENTLY may lock the table during deploy.", "severity": "medium"}
+  ],
+  "tests": {
+    "selected": 3,
+    "total_in_index": 5,
+    "seconds": 0.3,
+    "results": [
+      {"test": "tests/test_checkout.py::test_total_with_expired_coupon", "status": "failed", "message": "ValueError: Coupon has expired"},
+      {"test": "tests/test_checkout.py::test_total_without_coupon", "status": "passed"},
+      {"test": "tests/test_pricing.py::test_valid_coupon", "status": "passed"}
+    ]
+  },
+  "missing_coverage": [
+    {"description": "No test covered subscription renewal with an expired coupon.",
+     "generated_test": {"path": "api/tests/test_impact_renewal_expired.py", "status": "failed", "confirms_risk": true,
+                        "note": "run_renewals raised ValueError: Coupon has expired."}}
+  ],
+  "suggested_fixes": [
+    "Catch ValueError in OrderService.total and charge the full price, or keep returning 0 from calculate_discount and add a separate is_expired check.",
+    "Handle expired coupons per subscription in renew so one bad coupon does not stop the whole renewal run.",
+    "Update coupon_repo.find_active to use valid_until in the same release as the migration.",
+    "Create the index with CREATE INDEX CONCURRENTLY."
+  ],
+  "agent_trace": [
+    {"action": "impact facts", "detail": "1 changed function, 3 direct callers, 1 renamed column, 3 tests selected out of 5."},
+    {"action": "read api/billing/pricing.py", "detail": "Return 0 replaced by raise ValueError: behavior change, not a refactor."},
+    {"action": "read 3 callers", "detail": "build_invoice handles ValueError; OrderService.total and renew do not."},
+    {"action": "impact sandbox create", "detail": "Worktree created for feature/discount-rules."},
+    {"action": "impact run-tests", "detail": "2 passed, 1 failed: test_total_with_expired_coupon."},
+    {"action": "write and run generated test", "detail": "test_renewal_with_expired_coupon fails, confirming renewals break."},
+    {"action": "impact db-usage coupons.expires_at", "detail": "coupon_repo.py still uses the old column name."}
+  ]
+}
