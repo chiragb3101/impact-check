@@ -1,125 +1,115 @@
 # impact-check
 
-Find out whether a branch is safe to merge before you merge it.
+**Find out what your branch will break before you merge it, using the GitHub Copilot you already have.**
 
-`impact-check` looks at a branch and answers four questions:
+You ask Copilot "check feature/refund-limits". A few minutes later you get back:
 
-1. **What changed?** The functions, methods, classes and database columns modified on the branch.
-2. **Who is affected?** The code that calls the changed functions, up to 2–3 levels up.
-3. **Do the tests still pass?** It runs only the tests that reach the changed code, not the whole suite.
-4. **How risky is it?** A high, medium or low rating with the reasons, saved as an HTML report.
+- the functions you changed and the code that calls them
+- a verdict for each caller (`breaks`, `safe` or `unclear`) and the reason
+- results from running **only the tests that reach your change**, not the whole suite
+- a new test written for any risky path that has none
+- a **high / medium / low** risk rating, saved as an HTML report
 
 It supports Java, Python, JavaScript/TypeScript and SQL migrations, in single repos and monorepos.
 
-## How it works
+---
 
-There are two parts:
+## How it fits with Copilot Enterprise
 
 ```
-You ──► Copilot CLI agent (agent/impact-check.agent.md)
-           │  reads code, judges each caller, writes missing tests, writes the summary
-           │  runs `impact …` commands in the terminal
-           ▼
-        impact CLI ── git ── tree-sitter parser ── SQLite index ── your test runner
-           │
-           ▼
-        impact-reports/<branch>-<time>.html
+Developer ──► Copilot CLI  (your Copilot Enterprise seat and models)
+                  │  custom agent: impact-check.agent.md
+                  │  reads code, judges callers, writes tests, writes the summary
+                  ▼
+              impact CLI   (this package, runs locally, contains no AI)
+                  │  git diff · call graph · test selection · test runs · history
+                  ▼
+              impact-reports/<branch>-<time>.html
 ```
 
-- **`impact` CLI** (this package). It gathers the facts: the diff, a call graph, test selection, file
-  history and test runs. It contains **no LLM**, so it gives the same answer every time and costs
-  nothing to run. Every command prints JSON.
-- **The Copilot agent.** The reasoning happens here: is this a behaviour change, will this caller
-  break, which test is missing. It runs on whatever model your GitHub Copilot plan gives you. No
-  separate API key is needed.
+| Part | What it is | AI? |
+|---|---|---|
+| **Copilot CLI + `impact-check` agent** | Does the reasoning. It uses whichever model your enterprise allows. | Yes, through your Copilot Enterprise plan |
+| **`impact` CLI** | Gathers the facts: the diff, who calls what, which tests to run, file history. Every command prints JSON. | No. It gives the same answer every time and makes no network calls |
 
-You can also use the CLI on its own, without Copilot, to get the facts and test results.
+You need **no extra AI subscription and no API key**. All AI use goes through Copilot, so your
+enterprise's Copilot policies, model choices and audit logs apply.
 
-## Install
+---
 
-You need Python 3.10–3.12 and git.
+## What you need
+
+| | Requirement | Check |
+|---|---|---|
+| ☐ | A **Copilot Enterprise or Business seat** | github.com → Settings → Copilot |
+| ☐ | **Copilot CLI is enabled** by your org or enterprise admin | Run `copilot`; if it's blocked, ask your admin (step 0) |
+| ☐ | **Node.js 22+** (for the npm install of Copilot CLI) | `node --version` |
+| ☐ | **Python 3.10–3.12** | `python3 --version` |
+| ☐ | **git**, plus the repo's own test tools (Maven/Gradle, pytest, npm) working locally | Can you run the repo's tests today? |
+
+---
+
+## Setup, end to end
+
+### Step 0 · Admin, once per organization (about 10 min)
+
+An org or enterprise owner does this on GitHub.com.
+
+1. **Enable Copilot CLI:** Organization settings → Copilot → Policies → **Copilot CLI** → *Enabled*.
+2. **Enable the models** you want people to use: Copilot → Policies → Models. A strong
+   code-reasoning model gives noticeably better caller verdicts.
+3. **Optional: publish the agent to everyone at once.** Create a repo named `.github-private` in the
+   org and commit `agent/impact-check.agent.md` as `agents/impact-check.agent.md`. Every developer
+   in the org then sees the `impact-check` agent without copying it into each repo.
+4. **Check content exclusions.** If Copilot content exclusions cover parts of a repo, the agent
+   can't read those files, and its verdicts there will say `unclear`.
+
+> Every prompt to the agent uses Copilot **premium requests**, according to the model's multiplier.
+> A typical check is one conversation; budget for it like any other agent use.
+
+### Step 1 · Developer, once per machine (about 5 min)
 
 ```bash
+# 1. Copilot CLI
+npm install -g @github/copilot          # or: brew install --cask copilot-cli   /   winget install GitHub.Copilot
+
+# 2. Sign in with your enterprise GitHub account
+copilot                                 # inside the session type: /login   then follow the prompts
+
+# 3. The impact CLI
 pipx install git+https://github.com/chiragb3101/impact-check
-impact --version
+impact --version                        # should print: impact 0.1.0
 ```
 
-From a local checkout:
+> If `pipx` is missing: `brew install pipx` (macOS) or `python3 -m pip install --user pipx`.
+> Python 3.14 failed to create virtual environments on macOS in our testing, so use 3.12.
+
+**Optional: personal agent.** If your admin didn't publish the agent (step 0.3) and the repo
+doesn't have it (step 2.3), copy it to your user folder:
 
 ```bash
-pip install -e .
+mkdir -p ~/.copilot/agents
+curl -fsSL https://raw.githubusercontent.com/chiragb3101/impact-check/main/agent/impact-check.agent.md \
+  -o ~/.copilot/agents/impact-check.agent.md
 ```
 
-> On Python 3.14, `python -m venv` failed at `ensurepip` on macOS. Use 3.12, or
-> `uv venv -p 3.12` if you have uv.
+### Step 2 · Tech lead, once per repo (about 15 min)
 
-## Set up a repo
+Commit these files through a normal MR or PR.
 
-### 1. Add `impact.yaml`: required to run tests
+#### 2.1 `impact.yaml`: required
 
 `impact.yaml` goes in the repo root. It tells the tool which folders hold which language and **how
 to run their tests**.
 
-**Without `impact.yaml`:**
+> **Without `impact.yaml`** the analysis still works, but **tests don't run**. Changed functions,
+> callers and risk scores are reported, and every selected test comes back as `unresolved`, because
+> the tool doesn't know your test command yet.
 
-| Works | Doesn't work |
-|---|---|
-| `impact index`, `impact facts`: changed symbols, callers, which tests cover them, risk scores | `impact run-tests`: there is no test command, so every test comes back as `unresolved` |
-| `impact callers`, `history`, `db-usage`, `report`, `rules` | Monorepos where each folder runs tests differently |
-
-The tool treats the whole repo as one module and detects each file's language from its extension.
-That is enough for analysis but not for running tests, so in practice **every repo needs an
-`impact.yaml`**. Start from `impact.example.yaml`:
+Pick the closest example:
 
 ```yaml
-modules:
-  - path: api                      # folder, relative to the repo root ("" = whole repo)
-    language: python               # python | java | javascript | typescript | sql
-    test_command: python -m pytest -q {tests} --junitxml={junit}
-
-  - path: billing-service
-    language: java
-    test_command: mvn -q test -Dtest={tests} -Dsurefire.failIfNoSpecifiedTests=false
-    junit: target/surefire-reports # where the runner writes JUnit XML (relative to the module)
-
-  - path: web
-    language: typescript
-    test_command: npx jest --ci {tests}
-    env:
-      JEST_JUNIT_OUTPUT_FILE: "{junit}"
-
-  - path: db/migrations
-    language: sql                  # SQL folders are scanned for schema changes; no tests
-
-ignore: [generated, vendor]        # extra folder names to skip (node_modules, build, dist, target… are always skipped)
-history_days: 180                  # how far back to look for churn and bug-fix commits
-```
-
-**Fields**
-
-| Field | Required | Meaning |
-|---|---|---|
-| `modules[].path` | yes | Folder of the module. Test commands run with this folder as the working directory. |
-| `modules[].language` | no | Defaults to `auto` (detected from the file extension). |
-| `modules[].test_command` | to run tests | `{tests}` is replaced by the selected test ids; `{junit}` by a temporary JUnit XML path so results can be read per test. |
-| `modules[].junit` | no | A JUnit XML file or folder the runner writes itself (Maven Surefire, Gradle). |
-| `modules[].env` | no | Extra environment variables for the test command. `{junit}` works here too. |
-| `ignore` | no | Folder names to skip during indexing. |
-| `history_days` | no | Window for file history. Default 180. |
-
-**Single-repo examples**
-
-```yaml
-# Python package with a src/ layout. PYTHONPATH=src makes sandbox runs import the branch's code,
-# not the copy installed from your checkout.
-modules:
-  - path: ""
-    language: python
-    test_command: PYTHONPATH=src python -m pytest -q {tests} --junitxml={junit}
-```
-
-```yaml
-# Spring Boot with Maven
+# Spring Boot (Maven)
 modules:
   - path: ""
     language: java
@@ -127,7 +117,47 @@ modules:
     junit: target/surefire-reports
 ```
 
-**Test id formats** (what `{tests}` receives)
+```yaml
+# Python package with a src/ layout
+# PYTHONPATH=src makes sandbox runs import the branch's code, not the copy installed from your checkout.
+modules:
+  - path: ""
+    language: python
+    test_command: PYTHONPATH=src python -m pytest -q {tests} --junitxml={junit}
+```
+
+```yaml
+# Monorepo with several languages
+modules:
+  - path: api
+    language: python
+    test_command: python -m pytest -q {tests} --junitxml={junit}
+  - path: billing-service
+    language: java
+    test_command: mvn -q test -Dtest={tests} -Dsurefire.failIfNoSpecifiedTests=false
+    junit: target/surefire-reports
+  - path: web
+    language: typescript
+    test_command: npx jest --ci {tests}
+    env:
+      JEST_JUNIT_OUTPUT_FILE: "{junit}"
+  - path: db/migrations
+    language: sql                     # scanned for schema changes; no tests
+ignore: [generated, vendor]
+history_days: 180
+```
+
+| Field | Required | Meaning |
+|---|---|---|
+| `modules[].path` | yes | Module folder relative to the repo root (`""` = whole repo). Tests run with this folder as the working directory. |
+| `modules[].language` | no | `python`, `java`, `javascript`, `typescript` or `sql`. Default: detected from the file extension. |
+| `modules[].test_command` | **to run tests** | `{tests}` is replaced by the selected test ids; `{junit}` by a temporary JUnit XML path so results are read per test. |
+| `modules[].junit` | no | A JUnit XML file or folder the runner writes itself (Maven Surefire, Gradle). |
+| `modules[].env` | no | Extra environment variables for the test command. `{junit}` works here too. |
+| `ignore` | no | Folder names to skip. `node_modules`, `build`, `dist`, `target` and `.venv` are always skipped. |
+| `history_days` | no | How far back to look for churn and bug-fix commits. Default 180. |
+
+**What `{tests}` receives**
 
 | Language | Format | Example |
 |---|---|---|
@@ -135,166 +165,242 @@ modules:
 | Java | `Class#method`, joined with commas | `OwnerControllerTests#processFindFormSuccess` |
 | JS/TS | test file path relative to the module | `src/cart.test.ts` |
 
-### 2. Ignore the tool's working files
+**Check the config** before you commit it:
 
-Add to `.gitignore`:
+```bash
+impact index
+impact facts --branch <some-recent-branch> --base main      # look at "selected_tests"
+impact run-tests <one id from selected_tests>               # should report passed or failed, not unresolved
+```
+
+#### 2.2 `.gitignore`
 
 ```
 .impact/
 impact-reports/
 ```
 
-`.impact/` holds the index, the sandbox worktree and personal rules. `impact-reports/` holds the
-HTML reports.
+`.impact/` holds the index, the sandbox worktree and personal per-repo rules. `impact-reports/`
+holds the HTML reports.
 
-### 3. Add the Copilot agent
+#### 2.3 The agent: skip this if your admin published it org-wide
 
-Copy `agent/impact-check.agent.md` to `.github/agents/impact-check.agent.md` in the repo, or to
-your Copilot CLI agents folder. Check that the `tools:` names in its frontmatter match your
-Copilot version: the agent needs to read files, search, run terminal commands and edit files.
+```bash
+mkdir -p .github/agents
+cp <impact-check>/agent/impact-check.agent.md .github/agents/
+```
 
-### 4. Optional: team rules
+#### 2.4 Team rules: optional
 
-See [Rules](#rules-your-own-memory-for-reports). A repo works without any rules.
+Team rules are shared expectations the agent applies to every report in this repo:
 
-## Use it
+```bash
+impact rules add "Any change under payments/ is at least medium risk." --scope team
+impact rules add "Call out new endpoints that delete data, and say what protects them." --scope team
+git add impact-rules.md
+```
 
-### With Copilot (recommended)
+### Step 3 · Developer, every check (2–5 min)
 
 ```bash
 cd your-repo
+git fetch origin                        # the base and the branch must be available locally
+git switch main && git pull             # run from the base branch; the index is built from what's checked out
 copilot
 ```
 
-Select the `impact-check` agent, then ask:
+The first time, Copilot asks whether you trust the folder. Choose **"Yes, and remember this
+folder"**. Then:
 
 ```
+/agent                                  → choose impact-check
 check feature/refund-limits
-check feature/refund-limits against develop
 ```
 
-The agent will:
+You can also name the base branch, or ask a follow-up:
 
-1. Run `impact index` and `impact facts`.
-2. Read each changed function and decide what kind of change it is: behaviour change, refactor,
-   signature change, new or deleted.
-3. Read each direct caller and mark it `breaks`, `safe` or `unclear`, with a reason.
-4. Create a sandbox (a separate git worktree under `.impact/worktree/`) and run the selected tests
-   on the branch code.
-5. Write one focused test in the sandbox for any risky path that has no tests, and run it.
-6. Write `.impact/findings.json` and render the report.
-7. Remove the sandbox and reply with the risk level, the main problems and the report path.
+```
+check feature/refund-limits against develop
+why is OrderService.total marked unclear?
+```
 
-Your own checkout is never changed. The agent may not commit, push or switch branches.
+**What the agent does** (you'll see each step in the session)
 
-To allow the agent's commands without approving each one, allow `impact` and read-only `git`
-commands (`diff`, `log`, `show`) in your Copilot tool permissions.
+1. `impact index`, then `impact facts`: what changed, who calls it, which tests reach it, your rules.
+2. Reads each changed function and labels it: behaviour change, refactor, signature change, new or
+   deleted.
+3. Opens each direct caller and decides `breaks`, `safe` or `unclear`.
+4. Creates a sandbox, a separate git worktree under `.impact/worktree/`, and runs the selected
+   tests on the branch code.
+5. Writes one focused test in the sandbox for a risky path that has no tests, and runs it.
+6. Writes `.impact/findings.json`, renders the report and removes the sandbox.
+7. Replies with the risk level, the one or two main problems and the report path.
 
-### CLI only
+**Your own checkout is never changed.** The agent is told not to commit, push, merge, rebase,
+reset or switch branches.
+
+#### Stop approving every command
+
+Copilot asks before running each shell command. For this agent you can pre-approve the safe ones
+and block the risky ones:
 
 ```bash
-impact index                                    # build or refresh .impact/index.db
-impact facts --branch feature/x --base main     # JSON: changes, callers, tests, risk
-impact sandbox create --branch feature/x
-impact run-tests <ids from facts.next_steps.run_tests> --sandbox
-impact sandbox cleanup
+copilot --agent=impact-check \
+  --allow-tool='shell(impact:*)' \
+  --allow-tool='shell(git:*)' \
+  --deny-tool='shell(git push)' --deny-tool='shell(git commit)' \
+  --deny-tool='shell(git checkout)' --deny-tool='shell(git switch)' \
+  --deny-tool='shell(git reset)' --deny-tool='shell(git rebase)' --deny-tool='shell(git merge)'
 ```
 
-`--base` defaults to `main`. Pass `--base master` or `--base develop` if your repo uses another
-name. The base branch must exist locally.
+Deny rules always win over allow rules. Save this as a shell alias, for example
+`alias impact-check='copilot --agent=impact-check …'`. Test commands such as `mvn` or `pytest` run
+inside `impact run-tests`, so they need no separate approval.
 
-### Commands
+#### One-shot, no chat
+
+```bash
+copilot --agent=impact-check --prompt "check feature/refund-limits" \
+  --allow-tool='shell(impact:*)' --allow-tool='shell(git:*)' --deny-tool='shell(git push)'
+```
+
+### Step 4 · Read the report
+
+Open `impact-reports/<branch>-<time>.html` in a browser. It contains:
+
+| Section | What to look at |
+|---|---|
+| **Verdict** | Risk level, score and a two-to-three sentence answer to "is this safe to merge?" |
+| **What changed** | Each changed function and what kind of change it is |
+| **Who is affected** | Each caller with `breaks`, `safe` or `unclear`, and the reason |
+| **Tests** | Selected tests with pass/fail and failure messages |
+| **Missing coverage** | Tests the agent wrote, and whether they confirmed the risk |
+| **Rules applied** | Which of your rules changed the report, and how |
+| **How the agent got here** | Each step it took (collapsed) |
+
+Attach the report to your PR or MR, or paste the verdict into the description. Examples from real
+open-source PRs are in `docs/real-repo-runs/`.
+
+---
+
+## Rules: teach it your preferences
+
+Rules are **optional** plain-language instructions that the agent reads before every report. It
+follows them when judging risk and writing, and lists the ones it applied. Rules can change emphasis
+and severity. They never override test results or what the code does.
+
+**From the Copilot chat** (easiest):
+
+```
+remember: always check Kafka consumers when an event class changes
+from now on, don't flag churn in generated/ folders
+```
+
+The agent saves the rule and confirms it. If it isn't sure whether you mean just you or the whole
+team, it asks.
+
+**From the terminal:**
+
+```bash
+impact rules add "Treat any change under billing/ as at least medium risk."              # personal, every repo
+impact rules add "Ignore whitespace-only template changes." --scope local                 # personal, this repo
+impact rules add "Call out new delete endpoints and their auth." --scope team             # shared, commit impact-rules.md
+impact rules                    # list rules with ids
+impact rules remove u-1a2b      # forget one
+```
+
+| Scope | Stored in | Who sees it |
+|---|---|---|
+| `user` (default) | `~/.config/impact/rules.md` | Only you, in every repo |
+| `local` | `<repo>/.impact/rules.md` | Only you, in this repo |
+| `team` | `<repo>/impact-rules.md` | Everyone, once committed |
+
+When rules conflict, `local` beats `user`, and `user` beats `team`. The files are plain Markdown,
+one rule per bullet, so you can edit them by hand.
+
+---
+
+## Rolling it out across many repos
+
+| Who | Once | Ongoing |
+|---|---|---|
+| Org admin | Enable Copilot CLI and models; publish the agent in `.github-private/agents/` | Watch premium-request usage |
+| Each developer | Install Copilot CLI and `impact`; `/login` | `impact-check` → `check <branch>` before opening a PR |
+| Each repo's tech lead | Commit `impact.yaml`, `.gitignore` entries and, optionally, `impact-rules.md` | Update `impact.yaml` when modules or test commands change; review team-rule changes in PRs |
+
+The same CLI and agent work in every repo. Only `impact.yaml` and the team rules differ, and
+personal rules follow each developer from repo to repo.
+
+**Suggested pilot:** 1–2 repos and 3–5 developers for two weeks. Ask after each check whether the
+report was right and useful. See `NEXT_STEPS.md` for the full plan.
+
+---
+
+## Troubleshooting
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| `copilot: command not found` | Not installed, or npm's global bin isn't on PATH | Re-run step 1; check `npm prefix -g` |
+| Copilot says CLI access is disabled | Policy is off | Ask your admin (step 0.1) |
+| `/agent` doesn't list `impact-check` | Agent file not found | It must be in `.github/agents/`, `~/.copilot/agents/` or the org's `.github-private/agents/`; restart `copilot` |
+| Agent says `impact: command not found` | The pipx bin folder isn't on PATH | Run `pipx ensurepath` and open a new terminal |
+| `No index found` | First run in this repo | `impact index` (the agent normally does this) |
+| `git merge-base … failed` | Base branch isn't available locally | `git fetch origin main:main`, or pass `--base origin/main` |
+| Every test is `unresolved` | No `impact.yaml`, or no `test_command` for that folder | Step 2.1 |
+| All tests fail with "not found" | Index built on a different branch than the base | `git switch <base>`, then `impact index` |
+| New tests fail on code the branch clearly fixed | Python `src/` layout imports your installed checkout | Add `PYTHONPATH=src` to `test_command` |
+| Java tests all "failed" with "See output_tail" | Usually a compile error | Read `output_tail`; it often means something was renamed and is still in use |
+| Caller verdicts are mostly `unclear` | Content exclusions, or the model can't see enough | Check exclusions; try a stronger model |
+
+---
+
+## Command reference
 
 | Command | What it does |
 |---|---|
 | `impact index [--full]` | Builds or refreshes `.impact/index.db`. Only changed files are re-parsed. |
-| `impact facts --branch B [--base main] [--depth 2]` | Changed symbols, callers, reachable tests, schema changes, file history, risk scores and your rules. |
+| `impact facts --branch B [--base main] [--depth 2]` | Changed symbols, callers, reachable tests, schema changes, history, risk scores and your rules. |
 | `impact callers SYMBOL [--depth 3] [--branch B]` | Follows the call chain further for one symbol. |
-| `impact sandbox create --branch B` | Creates a git worktree of the branch at `.impact/worktree/`. |
-| `impact sandbox status` / `cleanup` | Lists files written in the sandbox / removes it. |
-| `impact run-tests ID... [--sandbox] [--module PATH] [--timeout 900]` | Runs test ids with each module's `test_command`; returns pass/fail and messages. |
+| `impact sandbox create --branch B` / `status` / `cleanup` | Manages the temporary worktree at `.impact/worktree/`. |
+| `impact run-tests ID... [--sandbox] [--module PATH] [--timeout 900]` | Runs test ids with each module's `test_command`. |
 | `impact db-usage table[.column]` | Code lines that reference a table or column. |
 | `impact history FILE [--days 180]` | Commits and bug-fix commits for a file. |
 | `impact schema` | Prints the findings JSON schema. |
 | `impact report FINDINGS.json [--out-dir DIR]` | Validates findings and renders the HTML report. |
-| `impact rules [list \| add TEXT \| remove ID \| path] [--scope user\|local\|team]` | Manages the natural-language rules the agent follows. |
+| `impact rules [list \| add TEXT \| remove ID \| path] [--scope user\|local\|team]` | Manages rules. |
 
 Global options: `--root PATH` (default: the git top level) and `--config PATH` (default:
 `<root>/impact.yaml`).
 
-## Rules: your own memory for reports
-
-Rules are **optional**. Each person can keep rules in plain language that the agent reads before
-every report. The agent follows them when judging risk and writing the report, and lists the ones
-it used under **Rules applied**, with the effect each one had. Rules can change emphasis and
-severity. They never override test results or what the code does.
-
-```bash
-impact rules add "Treat any change under billing/ as at least medium risk."                 # personal, every repo
-impact rules add "Ignore churn in generated/ when scoring." --scope local                     # personal, this repo
-impact rules add "Call out new endpoints that delete data, with their auth." --scope team     # shared
-impact rules                  # list all rules with ids
-impact rules remove u-1a2b    # forget one
-```
-
-| Scope | File | Shared? |
-|---|---|---|
-| `user` (default) | `~/.config/impact/rules.md` (or `$IMPACT_HOME/rules.md`) | No |
-| `local` | `<repo>/.impact/rules.md` | No |
-| `team` | `<repo>/impact-rules.md` | Yes, commit it |
-
-The files are ordinary Markdown with one rule per bullet, so you can also edit them by hand. When
-rules conflict, `local` beats `user`, and `user` beats `team`. In Copilot you can just say "from now
-on, always…" or "remember that…", and the agent saves the rule for you.
-
-## Using it across many repos
-
-| Who | Once | Every time |
-|---|---|---|
-| Each developer | `pipx install …` | `copilot` → `impact-check` agent → `check <branch>` |
-| Each repo (tech lead) | Commit `impact.yaml`, the agent file, `.gitignore` entries and, optionally, `impact-rules.md` | Update `impact.yaml` when modules or test commands change |
-
-The same CLI and agent work in every repo. Only `impact.yaml` and the team rules differ. Personal
-rules follow a developer from repo to repo.
-
-## Try the demo
+### Try it without a real repo
 
 ```bash
 scripts/make_demo_repo.sh /tmp/impact-demo
-cd /tmp/impact-demo
-impact index
-impact facts --branch feature/discount-rules
-impact sandbox create --branch feature/discount-rules
-impact run-tests tests/test_checkout.py::test_total_with_expired_coupon --sandbox
-impact report /path/to/impact-check/examples/findings.example.json
+cd /tmp/impact-demo && copilot     # /agent → impact-check → check feature/discount-rules
 ```
 
-The demo branch changes `calculate_discount` to raise on expired coupons, which breaks checkout and
-renewals, and renames a column that a query still uses. `examples/report.example.html` shows the
-report an agent run produces. Reports from real open-source PRs are in `docs/real-repo-runs/`.
+The demo branch makes coupon expiry raise an error, which breaks checkout and renewals, and renames
+a database column that a query still uses.
+
+---
 
 ## Known limits (v0.1.0)
 
-From testing on 8 real PRs. See [NEXT_STEPS.md](NEXT_STEPS.md) for the fix plan.
+Found by testing on 8 real open-source PRs. Fixes are planned in `NEXT_STEPS.md`.
 
-- **`impact.yaml` is needed to run tests.** The tool does not detect test commands yet.
+- **`impact.yaml` is needed to run tests.** Test commands are not detected yet.
 - **Callers are matched by name, not by type.** Spring dependency injection, reflection and dynamic
-  dispatch can hide callers, and common names add false ones. `definitions_with_same_name` flags
-  this, and the agent checks by reading the code.
-- **JavaScript written as `obj.fn = function…` or `exports.x = …`**, and mocha tests in a plain
+  dispatch can hide callers, and common names add false ones. The agent checks by reading the code.
+- **JavaScript written as `obj.fn = function` or `exports.x = …`**, and mocha tests in a plain
   `test/` folder, are not recognised. Only `*.test.*`, `*.spec.*` and `__tests__/` count as tests.
-- **The index reflects whatever branch is checked out** when `impact index` last ran. Run it on the
-  base branch. If one test id is missing, the whole test batch can fail.
-- **`src/`-layout Python packages** need `PYTHONPATH=src` in `test_command`. Without it, sandbox
-  runs test your installed checkout instead of the branch.
-- **Risk scoring:** deleted tests count as production risk, and a deleted method that is still
-  called only scores medium. The agent corrects both in its review.
+- **Run checks from the base branch.** The index reflects whatever is checked out when
+  `impact index` runs.
+- **Risk scores are a starting point.** Deleted tests inflate the score, and a deleted method that
+  is still called scores only medium. The agent corrects both in the final verdict.
 - **Python:** calls to `ClassName(...)` are not linked to `__init__`, and property access is not
   treated as a call.
-- **Only `.java`, `.py`, `.js`/`.ts` and `.sql` files are analysed.** Templates, `.properties` and
-  YAML changes are listed but not analysed.
-- **SQL detection** is regex-based and covers common DDL (create, drop, alter, rename, index).
-- **One repo at a time.** Callers in other repositories (for example other microservices) are not
-  found.
-- **Test execution runs branch code on your machine.** In CI, run it in an isolated container with
-  no secrets.
+- **Only code files are analysed.** Templates, `.properties` and YAML changes are listed but not
+  analysed.
+- **One repo at a time.** Callers in other repositories (other microservices) are not found.
+- **Tests run the branch's code on your machine.** Check branches you would be willing to run
+  locally. For CI, use an isolated container with no secrets.

@@ -1,9 +1,9 @@
 ---
 name: impact-check
 description: Checks whether a branch is safe to merge. Finds affected code, runs only the relevant tests, writes missing tests in a sandbox, and saves an HTML risk report.
-# Tool names differ between Copilot versions and between VS Code and Copilot CLI.
-# You need: read files, search code, run terminal commands, edit files. Adjust the names to your setup.
-tools: ['read', 'search', 'runCommands', 'edit']
+# GitHub tool aliases: read files, search code, run shell commands, edit files (sandbox and .impact/ only).
+# Works in Copilot CLI and on GitHub.com. Older VS Code builds may need 'runCommands' instead of 'execute'.
+tools: ['read', 'search', 'execute', 'edit']
 ---
 
 You are a senior backend engineer reviewing whether a branch is safe to merge into the base branch.
