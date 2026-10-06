@@ -277,7 +277,10 @@ The same agent works in Copilot Chat in VS Code:
 4. Check that VS Code's terminal can find the CLI: open a terminal (`` Ctrl+` ``) and run
    `impact --version`. If it can't, run `pipx ensurepath` and **quit and reopen VS Code**, not just
    the terminal.
-5. Prompt `check feature/refund-limits`. VS Code asks before each terminal command; click
+5. Optional but recommended: stop git from opening a pager in VS Code's terminal by adding this
+   to your VS Code settings (`.osx`, `.linux` or `.windows`):
+   `"terminal.integrated.env.osx": { "GIT_PAGER": "cat", "PAGER": "cat" }`
+6. Prompt `check feature/refund-limits`. VS Code asks before each terminal command; click
    **Allow**. You can allow `impact` commands for the session.
 
 If chat says *"impact command tool is not available in this session"*, the agent has no terminal
@@ -364,6 +367,7 @@ report was right and useful. See `NEXT_STEPS.md` for the full plan.
 | `copilot: command not found` | Not installed, or npm's global bin isn't on PATH | Re-run step 1; check `npm prefix -g` |
 | Copilot says CLI access is disabled | Policy is off | Ask your admin (step 0.1) |
 | VS Code chat: "impact command tool is not available" | Agent has no terminal tool (not in Agent mode, terminal tool unticked, or an old agent file with a `tools:` line) | See "Using the VS Code chat sidebar"; update the agent file |
+| Agent hangs at `git diff` / `git log` | git opened its pager (`less`) and is waiting for a key | Press `q` in that terminal. Update the agent file (it now uses `impact diff`). To stop it for good: `git config --global core.pager cat`, or in VS Code settings set `"terminal.integrated.env.osx": {"GIT_PAGER": "cat"}` (`.linux` / `.windows` on other systems) |
 | `/agent` doesn't list `impact-check` | Agent file not found | It must be in `.github/agents/`, `~/.copilot/agents/` or the org's `.github-private/agents/`; restart `copilot` |
 | Agent says `impact: command not found` | The pipx bin folder isn't on PATH | Run `pipx ensurepath` and open a new terminal |
 | `No index found` | First run in this repo | `impact index` (the agent normally does this) |
@@ -383,6 +387,7 @@ report was right and useful. See `NEXT_STEPS.md` for the full plan.
 | `impact index [--full]` | Builds or refreshes `.impact/index.db`. Only changed files are re-parsed. |
 | `impact facts --branch B [--base main] [--depth 2]` | Changed symbols, callers, reachable tests, schema changes, history, risk scores and your rules. |
 | `impact callers SYMBOL [--depth 3] [--branch B]` | Follows the call chain further for one symbol. |
+| `impact diff [FILE...] --branch B [--base main]` | The branch diff as JSON. Never opens git's pager, so agent sessions don't hang. |
 | `impact sandbox create --branch B` / `status` / `cleanup` | Manages the temporary worktree at `.impact/worktree/`. |
 | `impact run-tests ID... [--sandbox] [--module PATH] [--timeout 900]` | Runs test ids with each module's `test_command`. |
 | `impact db-usage table[.column]` | Code lines that reference a table or column. |

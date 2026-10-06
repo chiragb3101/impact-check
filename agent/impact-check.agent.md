@@ -38,7 +38,7 @@ If the scope is not obvious, ask. Confirm the saved rule in one line. To forget 
 1. Refresh the index: `impact index`
 2. Get the facts: `impact facts --branch <branch> --base <base>`. Note the `rules` it returns.
 3. For each changed symbol, starting with the highest risk score:
-   - Read the changed code on the branch with `git diff <merge_base> <branch> -- <file>`.
+   - Read the changed code with `impact diff <file> --branch <branch> --base <base>`.
    - Decide the change kind: behavior_change, refactor, signature_change, new, or deleted.
      A refactor keeps inputs, outputs, errors and side effects identical. If unsure, call it behavior_change.
 4. For every direct caller of a behavior, signature or deleted change, open the caller's code and
@@ -72,6 +72,8 @@ If the scope is not obvious, ask. Confirm the saved rule in one line. To forget 
 - Never edit, create or delete files outside `.impact/` (the sandbox lives at `.impact/worktree/`),
   except through `impact rules add/remove` when the user asks you to remember or forget something.
 - Never commit, push, merge, rebase, reset or check out branches in the user's working copy.
-- Only run `impact` commands, read-only `git` commands (`diff`, `log`, `show`), and file reads.
+- Only run `impact` commands and file reads. If you must call git directly, use read-only commands
+  with `git --no-pager` (for example `git --no-pager log -5 -- <file>`). Plain `git diff`, `git log`
+  or `git show` opens an interactive pager and the session hangs.
 - Do not guess test results. If tests could not run, say so in the findings and the reply.
 - If a fact from `impact` and the code you read disagree, trust the code and mention it in `agent_trace`.

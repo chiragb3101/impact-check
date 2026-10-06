@@ -98,6 +98,19 @@ def cmd_db_usage(cfg, args):
     _out(db_usage(cfg.root, files, table, column or None, limit=args.limit))
 
 
+def cmd_diff(cfg, args):
+    """Branch diff as JSON, so agents never trigger git's interactive pager."""
+    from .gitutil import git
+    mb = merge_base(cfg.root, args.base, args.branch)
+    paths = ["--", *args.files] if args.files else []
+    text = git(cfg.root, "--no-pager", "diff", f"--unified={args.context}", "--find-renames", "--no-color",
+               mb, args.branch, *paths)
+    truncated = len(text) > args.max_chars
+    _out({"branch": args.branch, "base": args.base, "merge_base": mb, "files": args.files or "all",
+          "diff": text[:args.max_chars], "truncated": truncated,
+          "hint": "Diff was cut off; pass specific files to see the rest." if truncated else None})
+
+
 def cmd_rules(cfg, args):
     from . import rules
     if args.action == "add":
@@ -168,6 +181,14 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("target", help="table or table.column")
     s.add_argument("--limit", type=int, default=50)
     s.set_defaults(func=cmd_db_usage)
+
+    s = sub.add_parser("diff", help="Branch diff as JSON (never opens a pager)")
+    s.add_argument("files", nargs="*", help="Limit to these files")
+    s.add_argument("--branch", required=True)
+    s.add_argument("--base", default="main")
+    s.add_argument("--context", type=int, default=5, help="Context lines around each change")
+    s.add_argument("--max-chars", type=int, default=60000)
+    s.set_defaults(func=cmd_diff)
 
     s = sub.add_parser("rules", help="Natural-language rules the agent follows when preparing reports")
     s.add_argument("action", nargs="?", choices=["list", "add", "remove", "path"], default="list")
